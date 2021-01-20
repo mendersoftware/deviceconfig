@@ -1,0 +1,43 @@
+version: '2.1'
+services:
+
+    tester:
+      image: testing
+      networks:
+        mender: {}
+      volumes:
+        - ".:/testing"
+      depends_on:
+        - mender-deviceconfig
+        - mmock
+      command: --host 'mender-deviceconfig:8080'
+      environment:
+        TESTING_MMOCK_HOST: "mmock:8080"
+        TESTING_HOST: "mender-deviceconfig:8080"
+
+    mender-deviceconfig:
+      image: mendersoftware/deviceconfig:prtest
+      networks:
+        mender:
+          aliases:
+            - mender-deviceconfig
+      volumes:
+        - ".:/testing"
+      depends_on:
+        - mender-mongo
+
+    mmock:
+      image: "jordimartin/mmock:v3.0.0"
+      networks:
+        mender:
+          aliases:
+            - mmock
+            - mender-workflows
+
+    mender-mongo:
+      image: "mongo:4.4"
+      networks:
+        mender: {}
+
+networks:
+  mender: {}
