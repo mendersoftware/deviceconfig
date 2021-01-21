@@ -34,7 +34,7 @@ func NewInternalAPI(app app.App) *InternalAPI {
 }
 
 func (api *InternalAPI) Alive(c *gin.Context) {
-	c.Status(http.StatusOK)
+	c.Status(http.StatusNoContent)
 }
 
 func (api *InternalAPI) Health(c *gin.Context) {
@@ -43,5 +43,5 @@ func (api *InternalAPI) Health(c *gin.Context) {
 		rest.RenderError(c, http.StatusInternalServerError, err)
 		return
 	}
-	c.Status(http.StatusOK)
+	c.Status(http.StatusNoContent)
 }
