@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"net/url"
 
+	mstore "github.com/mendersoftware/go-lib-micro/store"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -122,7 +123,7 @@ func (db *MongoStore) Close(ctx context.Context) error {
 //nolint:unused
 func (db *MongoStore) DropDatabase(ctx context.Context) error {
 	err := db.client.
-		Database(db.config.DbName).
+		Database(mstore.DbFromContext(ctx, db.config.DbName)).
 		Drop(ctx)
 	return err
 }
