@@ -57,12 +57,10 @@ b8514c577c1c4b46cee454d5a882b15fa411e72c5bd7f801f241591789fce61a  vendor/github.
 2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/golang.org/x/sync/LICENSE
 2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/golang.org/x/sys/LICENSE
 2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/golang.org/x/text/LICENSE
-8407b13e462f755c06db3db3a034dc1fdc9157af19c6ea8986e7d5aecf4126b3  vendor/gopkg.in/tomb.v2/LICENSE
 #
 # BSD-2-Clause
 8d427fd87bc9579ea368fde3d49f9ca22eac857f91a9dec7e3004bdfab7dee86  vendor/github.com/pkg/errors/LICENSE
 e45788cee53174eee4d7938484bedca0e66dcac6e92bec354b410273bdb5f6e7  vendor/github.com/magiconair/properties/LICENSE
-fe60e0cc90e88f12c814adb7dc88df6791c6ec6798d8c856b7d5ad1b805b4f10  vendor/github.com/mendersoftware/go-lib-micro/mongo/dbtest/LICENSE
 75e1ca97a84a9da6051dee0114333388216f2c4a5a028296b882ff3d57274735  vendor/github.com/russross/blackfriday/v2/LICENSE.txt
 #
 # MPL-2.0

@@ -16,6 +16,9 @@ package mongo
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -23,6 +26,7 @@ import (
 )
 
 func TestPing(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("skipping TestPing in short mode.")
 	}
@@ -32,4 +36,118 @@ func TestPing(t *testing.T) {
 	ds := GetTestDataStore(t)
 	err := ds.Ping(ctx)
 	assert.NoError(t, err)
+}
+
+func TestNewMongoStore(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		Name string
+		CTX  context.Context
+
+		Config MongoStoreConfig
+
+		Error error
+	}{{
+		Name: "ok",
+
+		Config: MongoStoreConfig{
+			DbName: t.Name(),
+			MongoURL: func() *url.URL {
+				uri, _ := url.Parse(db.URL())
+				return uri
+			}(),
+		},
+	}, {
+		Name: "error, bad uri scheme",
+
+		Config: MongoStoreConfig{
+			DbName: t.Name(),
+			MongoURL: func() *url.URL {
+				uri, _ := url.Parse(db.URL())
+				uri.Scheme = "notMongo"
+				return uri
+			}(),
+		},
+		Error: errors.New("mongo: failed to connect with server"),
+	}, {
+		Name: "error, wrong username/password",
+
+		Config: MongoStoreConfig{
+			DbName: t.Name(),
+			MongoURL: func() *url.URL {
+				uri, _ := url.Parse(db.URL())
+				return uri
+			}(),
+			Username: "user",
+			Password: "password",
+		},
+		Error: errors.New("mongo: error reaching mongo server"),
+	}, {
+		Name: "error, wrong username/password",
+
+		Config: MongoStoreConfig{
+			DbName: t.Name(),
+			MongoURL: func() *url.URL {
+				uri, _ := url.Parse(db.URL())
+				return uri
+			}(),
+			Username: "user",
+			Password: "password",
+		},
+		Error: errors.New("^mongo: error reaching mongo server: "),
+	}, {
+		Name: "error, missing url",
+
+		Config: MongoStoreConfig{
+			DbName: t.Name(),
+		},
+		Error: errors.New("^mongo: missing URL"),
+	}, {
+		Name: "error, context canceled",
+		CTX: func() context.Context {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			return ctx
+		}(),
+
+		Config: MongoStoreConfig{
+			DbName: t.Name(),
+			MongoURL: func() *url.URL {
+				uri, _ := url.Parse(db.URL())
+				return uri
+			}(),
+			TLSConfig: &tls.Config{},
+		},
+		Error: errors.New("^mongo: error reaching mongo server: " +
+			context.Canceled.Error(),
+		),
+	}}
+
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			if tc.CTX == nil {
+				ctx, cancel := context.WithTimeout(
+					context.Background(),
+					time.Second*5,
+				)
+				tc.CTX = ctx
+				defer cancel()
+			}
+			ds, err := NewMongoStore(tc.CTX, tc.Config)
+			if tc.Error != nil {
+				if assert.Error(t, err) {
+					assert.Regexp(t, tc.Error.Error(), err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, ds)
+			}
+			if ds != nil {
+				ds.Close(tc.CTX)
+			}
+		})
+	}
 }
