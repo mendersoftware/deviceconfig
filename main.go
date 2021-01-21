@@ -128,8 +128,7 @@ func initStoreFromConfig() (store.DataStore, error) {
 			InsecureSkipVerify: true,
 		}
 	}
-
-	return mongo.NewMongoStore(storeConfig)
+	return mongo.NewMongoStore(context.Background(), storeConfig)
 }
 
 func cmdServer(args *cli.Context) error {

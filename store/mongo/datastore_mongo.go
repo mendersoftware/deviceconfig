@@ -17,9 +17,7 @@ package mongo
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,8 +29,6 @@ const (
 	// DevicesCollectionName refers to the collection of stored devices
 	DevicesCollectionName = "devices"
 )
-
-const defaultTimeout = time.Second * 10
 
 type MongoStoreConfig struct {
 	// MongoURL holds the URL to the MongoDB server.
@@ -55,11 +51,8 @@ type MongoStoreConfig struct {
 func newClient(ctx context.Context, config MongoStoreConfig) (*mongo.Client, error) {
 
 	clientOptions := mopts.Client()
-	if config.MongoURL == nil || config.MongoURL.Scheme == "" {
-		return nil, errors.Errorf(
-			"Invalid mongoURL %s: missing scheme",
-			config.MongoURL.String(),
-		)
+	if config.MongoURL == nil {
+		return nil, errors.New("mongo: missing URL")
 	}
 	clientOptions.ApplyURI(config.MongoURL.String())
 
@@ -78,20 +71,14 @@ func newClient(ctx context.Context, config MongoStoreConfig) (*mongo.Client, err
 		clientOptions.SetTLSConfig(config.TLSConfig)
 	}
 
-	if _, ok := ctx.Deadline(); !ok {
-		// Set 10s timeout
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
-		defer cancel()
-	}
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to mongo server")
+		return nil, errors.Wrap(err, "mongo: failed to connect with server")
 	}
 
 	// Validate connection
 	if err = client.Ping(ctx, nil); err != nil {
-		return nil, errors.Wrap(err, "Error reaching mongo server")
+		return nil, errors.Wrap(err, "mongo: error reaching mongo server")
 	}
 
 	return client, nil
@@ -107,11 +94,10 @@ type MongoStore struct {
 }
 
 // SetupDataStore returns the mongo data store and optionally runs migrations
-func NewMongoStore(config MongoStoreConfig) (*MongoStore, error) {
-	ctx := context.Background()
+func NewMongoStore(ctx context.Context, config MongoStoreConfig) (*MongoStore, error) {
 	dbClient, err := newClient(ctx, config)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to connect to db: %v", err))
+		return nil, err
 	}
 	return &MongoStore{
 		client: dbClient,
