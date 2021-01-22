@@ -47,3 +47,13 @@ func (dev Device) Validate() error {
 	)
 	return errors.Wrap(err, "invalid device object")
 }
+
+type NewDevice struct {
+	ID uuid.UUID `json:"device_id"`
+}
+
+func (dev NewDevice) Validate() error {
+	return validation.ValidateStruct(&dev,
+		validation.Field(&dev.ID, uuidNotEmpty),
+	)
+}
