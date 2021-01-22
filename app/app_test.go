@@ -18,17 +18,21 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	store_mocks "github.com/mendersoftware/deviceconfig/store/mocks"
+	"github.com/mendersoftware/deviceconfig/model"
+	mstore "github.com/mendersoftware/deviceconfig/store/mocks"
 )
 
 func TestHealthCheck(t *testing.T) {
+	t.Parallel()
 	err := errors.New("error")
 
-	store := &store_mocks.DataStore{}
+	store := &mstore.DataStore{}
 	store.On("Ping",
 		mock.MatchedBy(func(ctx context.Context) bool {
 			return true
@@ -42,4 +46,41 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, err, res)
 
 	store.AssertExpectations(t)
+}
+
+func TestProvisionDevice(t *testing.T) {
+	t.Parallel()
+	ctx := context.TODO()
+	dev := model.NewDevice{
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+	}
+	deviceMatcher := mock.MatchedBy(func(d model.Device) bool {
+		if !assert.Equal(t, dev.ID, d.ID) {
+			return false
+		}
+		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+	})
+
+	ds := new(mstore.DataStore)
+	defer ds.AssertExpectations(t)
+	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
+
+	app := New(ds, Config{})
+	err := app.ProvisionDevice(ctx, dev)
+	assert.NoError(t, err)
+}
+
+func TestDecommissionDevice(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.TODO()
+	devID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io"))
+
+	ds := new(mstore.DataStore)
+	defer ds.AssertExpectations(t)
+	ds.On("DeleteDevice", ctx, devID).Return(nil)
+
+	app := New(ds, Config{})
+	err := app.DecommissionDevice(ctx, devID)
+	assert.NoError(t, err)
 }
