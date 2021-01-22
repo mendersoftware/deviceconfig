@@ -19,16 +19,20 @@ import (
 	"crypto/tls"
 	"net/url"
 
+	"github.com/google/uuid"
 	mstore "github.com/mendersoftware/go-lib-micro/store"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	mopts "go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/mendersoftware/deviceconfig/model"
+	"github.com/mendersoftware/deviceconfig/store"
 )
 
 const (
-	// DevicesCollectionName refers to the collection of stored devices
-	DevicesCollectionName = "devices"
+	// CollDevices refers to the collection name for device configurations
+	CollDevices = "devices"
 )
 
 type MongoStoreConfig struct {
@@ -106,6 +110,10 @@ func NewMongoStore(ctx context.Context, config MongoStoreConfig) (*MongoStore, e
 	}, nil
 }
 
+func (db *MongoStore) Database(ctx context.Context, opt ...*mopts.DatabaseOptions) *mongo.Database {
+	return db.client.Database(mstore.DbFromContext(ctx, db.config.DbName), opt...)
+}
+
 // Ping verifies the connection to the database
 func (db *MongoStore) Ping(ctx context.Context) error {
 	res := db.client.
@@ -126,4 +134,29 @@ func (db *MongoStore) DropDatabase(ctx context.Context) error {
 		Database(mstore.DbFromContext(ctx, db.config.DbName)).
 		Drop(ctx)
 	return err
+}
+
+func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error {
+	if err := dev.Validate(); err != nil {
+		return err
+	}
+	collDevs := db.Database(ctx).Collection(CollDevices)
+
+	_, err := collDevs.InsertOne(ctx, dev)
+	return errors.Wrap(err, "mongo: failed to store device configuration")
+}
+
+func (db *MongoStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {
+	collDevs := db.Database(ctx).Collection(CollDevices)
+
+	fltr := bson.D{{
+		Key:   "_id",
+		Value: devID,
+	}}
+	res, err := collDevs.DeleteOne(ctx, fltr)
+
+	if res != nil && res.DeletedCount == 0 {
+		return errors.Wrap(store.ErrDeviceNoExist, "mongo")
+	}
+	return errors.Wrap(err, "mongo: failed to delete device configuration")
 }

@@ -16,6 +16,14 @@ package store
 
 import (
 	"context"
+	"errors"
+
+	"github.com/google/uuid"
+	"github.com/mendersoftware/deviceconfig/model"
+)
+
+var (
+	ErrDeviceNoExist = errors.New("device does not exist")
 )
 
 // DataStore interface for DataStore services
@@ -31,4 +39,10 @@ type DataStore interface {
 	// migrate the single tenant's db. If ctx does not have an identity,
 	// all deviceconfig collections will be migrated to the given version.
 	Migrate(ctx context.Context, version string, automigrate bool) error
+
+	// InsertDeviceConfig inserts a new device configuration
+	InsertDevice(ctx context.Context, dev model.Device) error
+
+	// DeleteDevice removes the device object with the given ID from the database.
+	DeleteDevice(ctx context.Context, devID uuid.UUID) error
 }

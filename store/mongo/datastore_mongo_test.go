@@ -22,7 +22,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/mendersoftware/deviceconfig/model"
+	"github.com/mendersoftware/deviceconfig/store"
+	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPing(t *testing.T) {
@@ -147,6 +152,147 @@ func TestNewMongoStore(t *testing.T) {
 			}
 			if ds != nil {
 				ds.Close(tc.CTX)
+			}
+		})
+	}
+}
+
+func TestInsertDevice(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		Name string
+
+		CTX    context.Context
+		Device model.Device
+
+		Error error
+	}{{
+		Name: "ok",
+
+		Device: model.Device{
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			UpdatedTS: time.Now(),
+		},
+	}, {
+		Name: "error, invalid document",
+
+		Device: model.Device{
+			UpdatedTS: time.Now(),
+		},
+		Error: errors.New(`^invalid device object: id: cannot be blank.$`),
+	}, {
+		Name: "error, context canceled",
+		CTX: func() context.Context {
+			ctx, cancel := context.WithCancel(context.TODO())
+			cancel()
+			return ctx
+		}(),
+
+		Device: model.Device{
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			UpdatedTS: time.Now(),
+		},
+		Error: errors.New(
+			`mongo: failed to store device configuration: .*` +
+				context.Canceled.Error() + `$`,
+		),
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			ds := GetTestDataStore(t)
+			if tc.CTX == nil {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				defer cancel()
+				tc.CTX = ctx
+				defer ds.DropDatabase(tc.CTX)
+			}
+			err := ds.InsertDevice(tc.CTX, tc.Device)
+			if tc.Error != nil {
+				if assert.Error(t, err) {
+					assert.Regexp(t, tc.Error.Error(), err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDeleteDevice(t *testing.T) {
+	t.Parallel()
+
+	var testDevice = model.Device{
+		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		UpdatedTS: time.Now(),
+	}
+
+	testCases := []struct {
+		Name string
+
+		CTX context.Context
+		ID  uuid.UUID
+
+		Error error
+	}{{
+		Name: "ok",
+
+		ID: testDevice.ID,
+	}, {
+		Name: "ok, tenant",
+
+		ID: testDevice.ID,
+
+		CTX: identity.WithContext(context.Background(),
+			&identity.Identity{
+				Tenant: "123456789012345678901234",
+			},
+		),
+	}, {
+
+		Name: "error, device does not exist",
+
+		Error: errors.New(`^mongo: ` + store.ErrDeviceNoExist.Error()),
+	}, {
+		Name: "error, context canceled",
+		ID:   testDevice.ID,
+		CTX: func() context.Context {
+			ctx, cancel := context.WithCancel(context.TODO())
+			cancel()
+			return ctx
+		}(),
+
+		Error: errors.New(
+			`mongo: failed to delete device configuration: .*` +
+				context.Canceled.Error() + `$`,
+		),
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			ds := GetTestDataStore(t)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+			defer ds.DropDatabase(ctx)
+			if tc.CTX == nil {
+				tc.CTX = ctx
+			} else if id := identity.FromContext(tc.CTX); id != nil {
+				ctx = identity.WithContext(ctx, id)
+			}
+			err := ds.InsertDevice(ctx, testDevice)
+			require.NoError(t, err)
+
+			err = ds.DeleteDevice(tc.CTX, tc.ID)
+			if tc.Error != nil {
+				if assert.Error(t, err) {
+					assert.Regexp(t, tc.Error.Error(), err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
