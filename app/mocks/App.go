@@ -71,3 +71,17 @@ func (_m *App) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {
 
 	return r0
 }
+
+// ProvisionTenant provides a mock function with given fields: ctx, tenant
+func (_m *App) ProvisionTenant(ctx context.Context, tenant model.NewTenant) error {
+	ret := _m.Called(ctx, tenant)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, model.NewTenant) error); ok {
+		r0 = rf(ctx, tenant)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

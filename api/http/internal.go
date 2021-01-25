@@ -20,7 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/mendersoftware/go-lib-micro/identity"
-	"github.com/mendersoftware/go-lib-micro/log"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
 	"github.com/pkg/errors"
 
@@ -52,6 +51,40 @@ func (api *InternalAPI) Health(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (api *InternalAPI) ProvisionTenant(c *gin.Context) {
+	var tenant model.NewTenant
+	ctx := c.Request.Context()
+
+	err := c.ShouldBindJSON(&tenant)
+	if err != nil {
+		rest.RenderError(c, http.StatusBadRequest,
+			errors.Wrap(err, "malformed request body"),
+		)
+		return
+	}
+
+	if err = tenant.Validate(); err != nil {
+		rest.RenderError(c, http.StatusBadRequest,
+			errors.Wrap(err, "invalid request body"),
+		)
+		return
+	}
+	ctx = identity.WithContext(ctx, &identity.Identity{
+		Tenant: tenant.TenantID,
+	})
+	c.Request = c.Request.WithContext(ctx)
+
+	err = api.App.ProvisionTenant(ctx, tenant)
+	if err != nil {
+		c.Error(err) //nolint:errcheck
+		rest.RenderError(c, http.StatusInternalServerError,
+			errors.New(http.StatusText(http.StatusInternalServerError)),
+		)
+		return
+	}
+	c.Status(http.StatusCreated)
+}
+
 func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 	var dev model.NewDevice
 	ctx := c.Request.Context()
@@ -64,7 +97,7 @@ func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 	if err != nil {
 		rest.RenderError(c,
 			http.StatusBadRequest,
-			errors.Wrap(err, "invalid request body"),
+			errors.Wrap(err, "malformed request body"),
 		)
 		return
 	}
@@ -75,7 +108,7 @@ func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 		)
 		return
 	}
-	err = api.App.ProvisionDevice(c.Request.Context(), dev)
+	err = api.App.ProvisionDevice(ctx, dev)
 	if err != nil {
 		switch cause := errors.Cause(err); cause {
 		case store.ErrDeviceAlreadyExists:
@@ -100,7 +133,7 @@ func (api *InternalAPI) DecommissionDevice(c *gin.Context) {
 			Subject: deviceID,
 		},
 	)
-	l := log.FromContext(ctx)
+	c.Request = c.Request.WithContext(ctx)
 
 	deviceUUID, err := uuid.Parse(deviceID)
 	if err != nil {
@@ -116,10 +149,10 @@ func (api *InternalAPI) DecommissionDevice(c *gin.Context) {
 		case store.ErrDeviceNoExist:
 			rest.RenderError(c, http.StatusNotFound, store.ErrDeviceNoExist)
 		default:
-			l.Error(err.Error())
+			c.Error(err) //nolint:errcheck
 			rest.RenderError(c,
 				http.StatusInternalServerError,
-				errors.New("internal error"),
+				errors.New(http.StatusText(http.StatusInternalServerError)),
 			)
 		}
 		return
