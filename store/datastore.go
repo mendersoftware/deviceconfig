@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	ErrDeviceNoExist = errors.New("device does not exist")
+	ErrDeviceNoExist       = errors.New("device does not exist")
+	ErrDeviceAlreadyExists = errors.New("device already exists")
 )
 
 // DataStore interface for DataStore services

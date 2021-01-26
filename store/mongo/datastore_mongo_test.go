@@ -17,7 +17,6 @@ package mongo
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"net/url"
 	"testing"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
 	"github.com/mendersoftware/go-lib-micro/identity"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -162,23 +162,23 @@ func TestInsertDevice(t *testing.T) {
 	testCases := []struct {
 		Name string
 
-		CTX    context.Context
-		Device model.Device
+		CTX     context.Context
+		Devices []model.Device
 
 		Error error
 	}{{
 		Name: "ok",
 
-		Device: model.Device{
+		Devices: []model.Device{{
 			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
 			UpdatedTS: time.Now(),
-		},
+		}},
 	}, {
 		Name: "error, invalid document",
 
-		Device: model.Device{
+		Devices: []model.Device{{
 			UpdatedTS: time.Now(),
-		},
+		}},
 		Error: errors.New(`^invalid device object: id: cannot be blank.$`),
 	}, {
 		Name: "error, context canceled",
@@ -188,19 +188,31 @@ func TestInsertDevice(t *testing.T) {
 			return ctx
 		}(),
 
-		Device: model.Device{
+		Devices: []model.Device{{
 			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
 			UpdatedTS: time.Now(),
-		},
+		}},
 		Error: errors.New(
 			`mongo: failed to store device configuration: .*` +
 				context.Canceled.Error() + `$`,
 		),
+	}, {
+		Name: "error, duplicate key",
+
+		Devices: []model.Device{{
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			UpdatedTS: time.Now(),
+		}, {
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			UpdatedTS: time.Now(),
+		}},
+		Error: store.ErrDeviceAlreadyExists,
 	}}
 	for i := range testCases {
 		tc := testCases[i]
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
+			var err error
 
 			ds := GetTestDataStore(t)
 			if tc.CTX == nil {
@@ -209,9 +221,15 @@ func TestInsertDevice(t *testing.T) {
 				tc.CTX = ctx
 				defer ds.DropDatabase(tc.CTX)
 			}
-			err := ds.InsertDevice(tc.CTX, tc.Device)
+			for _, dev := range tc.Devices {
+				err = ds.InsertDevice(tc.CTX, dev)
+				if err != nil {
+					break
+				}
+			}
 			if tc.Error != nil {
 				if assert.Error(t, err) {
+					t.Logf("%T", errors.Cause(err))
 					assert.Regexp(t, tc.Error.Error(), err.Error())
 				}
 			} else {

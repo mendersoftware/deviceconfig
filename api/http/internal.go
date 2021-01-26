@@ -59,7 +59,7 @@ func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 		Tenant: c.Param("tenant_id"),
 	}
 	ctx = identity.WithContext(ctx, id)
-	l := log.FromContext(ctx)
+	c.Request = c.Request.WithContext(ctx)
 	err := c.ShouldBindJSON(&dev)
 	if err != nil {
 		rest.RenderError(c,
@@ -77,11 +77,16 @@ func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 	}
 	err = api.App.ProvisionDevice(c.Request.Context(), dev)
 	if err != nil {
-		l.Error(err.Error())
-		rest.RenderError(c,
-			http.StatusInternalServerError,
-			errors.New("internal error"),
-		)
+		switch cause := errors.Cause(err); cause {
+		case store.ErrDeviceAlreadyExists:
+			rest.RenderError(c, http.StatusConflict, cause)
+		default:
+			c.Error(err) //nolint:errcheck
+			rest.RenderError(c,
+				http.StatusInternalServerError,
+				errors.New(http.StatusText(http.StatusInternalServerError)),
+			)
+		}
 		return
 	}
 	c.Status(http.StatusCreated)

@@ -143,6 +143,10 @@ func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error 
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
 	_, err := collDevs.InsertOne(ctx, dev)
+	if IsDuplicateKeyErr(err) {
+		return store.ErrDeviceAlreadyExists
+	}
+
 	return errors.Wrap(err, "mongo: failed to store device configuration")
 }
 

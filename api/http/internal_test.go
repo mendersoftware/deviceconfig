@@ -192,7 +192,7 @@ func TestProvisionDevice(t *testing.T) {
 		},
 		Status: http.StatusBadRequest,
 	}, {
-		Name: "error invalid request body",
+		Name: "error, internal (app) error",
 
 		Request: func() *http.Request {
 			body, _ := json.Marshal(map[string]interface{}{
@@ -220,10 +220,43 @@ func TestProvisionDevice(t *testing.T) {
 			return app
 		}(),
 		Error: &rest.Error{
-			Err:       "internal error",
+			Err:       http.StatusText(http.StatusInternalServerError),
 			RequestID: "test",
 		},
 		Status: http.StatusInternalServerError,
+	}, {
+		Name: "error, device already exists",
+
+		Request: func() *http.Request {
+			body, _ := json.Marshal(map[string]interface{}{
+				"device_id": uuid.NewSHA1(
+					uuid.NameSpaceDNS, []byte("mender.io"),
+				),
+			})
+
+			req, _ := http.NewRequest("POST",
+				"http://localhost"+URIInternal+URITenantDevices,
+				bytes.NewReader(body),
+			)
+			req.Header.Set("X-Men-Requestid", "test")
+			return req
+		}(),
+
+		App: func() *mapp.App {
+			app := new(mapp.App)
+			app.On("ProvisionDevice",
+				contextMatcher,
+				newDeviceMatcher(uuid.NewSHA1(
+					uuid.NameSpaceDNS, []byte("mender.io"),
+				)),
+			).Return(store.ErrDeviceAlreadyExists)
+			return app
+		}(),
+		Error: &rest.Error{
+			Err:       store.ErrDeviceAlreadyExists.Error(),
+			RequestID: "test",
+		},
+		Status: http.StatusConflict,
 	}}
 	for i := range testCases {
 		tc := testCases[i]
