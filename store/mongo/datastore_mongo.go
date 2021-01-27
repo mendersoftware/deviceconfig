@@ -17,22 +17,23 @@ package mongo
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net/url"
-	"time"
 
+	"github.com/google/uuid"
+	mstore "github.com/mendersoftware/go-lib-micro/store"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	mopts "go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/mendersoftware/deviceconfig/model"
+	"github.com/mendersoftware/deviceconfig/store"
 )
 
 const (
-	// DevicesCollectionName refers to the collection of stored devices
-	DevicesCollectionName = "devices"
+	// CollDevices refers to the collection name for device configurations
+	CollDevices = "devices"
 )
-
-const defaultTimeout = time.Second * 10
 
 type MongoStoreConfig struct {
 	// MongoURL holds the URL to the MongoDB server.
@@ -55,11 +56,8 @@ type MongoStoreConfig struct {
 func newClient(ctx context.Context, config MongoStoreConfig) (*mongo.Client, error) {
 
 	clientOptions := mopts.Client()
-	if config.MongoURL == nil || config.MongoURL.Scheme == "" {
-		return nil, errors.Errorf(
-			"Invalid mongoURL %s: missing scheme",
-			config.MongoURL.String(),
-		)
+	if config.MongoURL == nil {
+		return nil, errors.New("mongo: missing URL")
 	}
 	clientOptions.ApplyURI(config.MongoURL.String())
 
@@ -78,20 +76,14 @@ func newClient(ctx context.Context, config MongoStoreConfig) (*mongo.Client, err
 		clientOptions.SetTLSConfig(config.TLSConfig)
 	}
 
-	if _, ok := ctx.Deadline(); !ok {
-		// Set 10s timeout
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
-		defer cancel()
-	}
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to mongo server")
+		return nil, errors.Wrap(err, "mongo: failed to connect with server")
 	}
 
 	// Validate connection
 	if err = client.Ping(ctx, nil); err != nil {
-		return nil, errors.Wrap(err, "Error reaching mongo server")
+		return nil, errors.Wrap(err, "mongo: error reaching mongo server")
 	}
 
 	return client, nil
@@ -107,16 +99,19 @@ type MongoStore struct {
 }
 
 // SetupDataStore returns the mongo data store and optionally runs migrations
-func NewMongoStore(config MongoStoreConfig) (*MongoStore, error) {
-	ctx := context.Background()
+func NewMongoStore(ctx context.Context, config MongoStoreConfig) (*MongoStore, error) {
 	dbClient, err := newClient(ctx, config)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to connect to db: %v", err))
+		return nil, err
 	}
 	return &MongoStore{
 		client: dbClient,
 		config: config,
 	}, nil
+}
+
+func (db *MongoStore) Database(ctx context.Context, opt ...*mopts.DatabaseOptions) *mongo.Database {
+	return db.client.Database(mstore.DbFromContext(ctx, db.config.DbName), opt...)
 }
 
 // Ping verifies the connection to the database
@@ -136,7 +131,36 @@ func (db *MongoStore) Close(ctx context.Context) error {
 //nolint:unused
 func (db *MongoStore) DropDatabase(ctx context.Context) error {
 	err := db.client.
-		Database(db.config.DbName).
+		Database(mstore.DbFromContext(ctx, db.config.DbName)).
 		Drop(ctx)
 	return err
+}
+
+func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error {
+	if err := dev.Validate(); err != nil {
+		return err
+	}
+	collDevs := db.Database(ctx).Collection(CollDevices)
+
+	_, err := collDevs.InsertOne(ctx, dev)
+	if IsDuplicateKeyErr(err) {
+		return store.ErrDeviceAlreadyExists
+	}
+
+	return errors.Wrap(err, "mongo: failed to store device configuration")
+}
+
+func (db *MongoStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {
+	collDevs := db.Database(ctx).Collection(CollDevices)
+
+	fltr := bson.D{{
+		Key:   "_id",
+		Value: devID,
+	}}
+	res, err := collDevs.DeleteOne(ctx, fltr)
+
+	if res != nil && res.DeletedCount == 0 {
+		return errors.Wrap(store.ErrDeviceNoExist, "mongo")
+	}
+	return errors.Wrap(err, "mongo: failed to delete device configuration")
 }

@@ -97,7 +97,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Device'
+              $ref: '#/components/schemas/NewDevice'
       responses:
         201:
           description: Device was provisioned successfully.
@@ -110,7 +110,7 @@ paths:
     delete:
       tags:
         - InternalAPI
-      operationId: Decomission device
+      operationId: Decommission device
       summary: Remove a device from the deviceconfig service.
       parameters:
         - in: path
@@ -126,7 +126,7 @@ paths:
           required: true
           description: ID of the target device.
       responses:
-        202:
+        204:
           description: Device was deleted successfully
         500:
           $ref: '#/components/responses/InternalServerError'
@@ -160,7 +160,7 @@ components:
       required:
         - tenant_id
 
-    Device:
+    NewDevice:
       type: object
       properties:
         device_id:

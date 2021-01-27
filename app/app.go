@@ -16,9 +16,13 @@ package app
 
 import (
 	"context"
+	"time"
 
-	"github.com/mendersoftware/deviceconfig/store"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
+	"github.com/mendersoftware/deviceconfig/model"
+	"github.com/mendersoftware/deviceconfig/store"
 )
 
 // App errors
@@ -32,6 +36,9 @@ var (
 //go:generate ../x/mockgen.sh
 type App interface {
 	HealthCheck(ctx context.Context) error
+
+	ProvisionDevice(ctx context.Context, dev model.NewDevice) error
+	DecommissionDevice(ctx context.Context, devID uuid.UUID) error
 }
 
 // app is an app object
@@ -61,4 +68,14 @@ func New(ds store.DataStore, config ...Config) App {
 // HealthCheck performs a health check and returns an error if it fails
 func (a *app) HealthCheck(ctx context.Context) error {
 	return a.store.Ping(ctx)
+}
+
+func (a *app) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {
+	return a.store.InsertDevice(ctx, model.Device{
+		ID:        dev.ID,
+		UpdatedTS: time.Now(),
+	})
+}
+func (a *app) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
+	return a.store.DeleteDevice(ctx, devID)
 }

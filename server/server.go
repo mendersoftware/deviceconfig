@@ -43,10 +43,7 @@ func InitAndRun(dataStore store.DataStore) error {
 		},
 	)
 
-	router, err := api.NewRouter(appl)
-	if err != nil {
-		l.Fatal(err)
-	}
+	router := api.NewRouter(appl)
 
 	var listen = config.Config.GetString(SettingListen)
 	srv := &http.Server{

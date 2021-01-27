@@ -30,12 +30,15 @@ import (
 
 // API URL used by the HTTP router
 const (
-	APIURIDevices    = "/api/devices/v1/deviceconfig"
-	APIURIInternal   = "/api/internal/v1/deviceconfig"
-	APIURIManagement = "/api/management/v1/deviceconfig"
+	URIDevices    = "/api/devices/v1/deviceconfig"
+	URIInternal   = "/api/internal/v1/deviceconfig"
+	URIManagement = "/api/management/v1/deviceconfig"
 
-	APIURIAlive  = "/alive"
-	APIURIHealth = "/health"
+	URITenantDevices = "/tenants/:tenant_id/devices"
+	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
+
+	URIAlive  = "/alive"
+	URIHealth = "/health"
 )
 
 func init() {
@@ -47,8 +50,8 @@ func init() {
 	gin.DisableConsoleColor()
 }
 
-// NewRouter returns the gin router
-func NewRouter(app app.App) (http.Handler, error) {
+// NewRouter initializes a new gin.Engine as a http.Handler
+func NewRouter(app app.App) http.Handler {
 	router := gin.New()
 	// accesslog provides logging of http responses and recovery on panic.
 	router.Use(accesslog.Middleware())
@@ -56,12 +59,16 @@ func NewRouter(app app.App) (http.Handler, error) {
 	router.Use(requestid.Middleware())
 
 	intrnlAPI := NewInternalAPI(app)
-	intrnlGrp := router.Group(APIURIInternal)
-	intrnlGrp.GET(APIURIAlive, intrnlAPI.Alive)
-	intrnlGrp.GET(APIURIHealth, intrnlAPI.Health)
+	intrnlGrp := router.Group(URIInternal)
+
+	intrnlGrp.GET(URIAlive, intrnlAPI.Alive)
+	intrnlGrp.GET(URIHealth, intrnlAPI.Health)
+
+	intrnlGrp.POST(URITenantDevices, intrnlAPI.ProvisionDevice)
+	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
 
 	// mgmtAPI := NewManagementAPI(app)
-	mgmtGrp := router.Group(APIURIManagement)
+	mgmtGrp := router.Group(URIManagement)
 	// identity middleware for collecting JWT claims into request Context.
 	mgmtGrp.Use(identity.Middleware())
 	// cors middleware for checking origin headers.
@@ -94,8 +101,8 @@ func NewRouter(app app.App) (http.Handler, error) {
 	}))
 
 	// mgmtAPI := NewManagementAPI(app)
-	devGrp := router.Group(APIURIDevices)
+	devGrp := router.Group(URIDevices)
 	devGrp.Use(identity.Middleware())
 
-	return router, nil
+	return router
 }
