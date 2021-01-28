@@ -23,6 +23,7 @@ import (
 
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
+	"github.com/mendersoftware/go-lib-micro/identity"
 )
 
 // App errors
@@ -36,6 +37,8 @@ var (
 //go:generate ../x/mockgen.sh
 type App interface {
 	HealthCheck(ctx context.Context) error
+
+	ProvisionTenant(ctx context.Context, tenant model.NewTenant) error
 
 	ProvisionDevice(ctx context.Context, dev model.NewDevice) error
 	DecommissionDevice(ctx context.Context, devID uuid.UUID) error
@@ -68,6 +71,13 @@ func New(ds store.DataStore, config ...Config) App {
 // HealthCheck performs a health check and returns an error if it fails
 func (a *app) HealthCheck(ctx context.Context) error {
 	return a.store.Ping(ctx)
+}
+
+func (a *app) ProvisionTenant(ctx context.Context, tenant model.NewTenant) error {
+	ctx = identity.WithContext(ctx, &identity.Identity{
+		Tenant: tenant.TenantID,
+	})
+	return a.store.MigrateLatest(ctx)
 }
 
 func (a *app) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {

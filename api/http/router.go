@@ -34,6 +34,7 @@ const (
 	URIInternal   = "/api/internal/v1/deviceconfig"
 	URIManagement = "/api/management/v1/deviceconfig"
 
+	URITenants       = "/tenants"
 	URITenantDevices = "/tenants/:tenant_id/devices"
 	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
 
@@ -64,6 +65,7 @@ func NewRouter(app app.App) http.Handler {
 	intrnlGrp.GET(URIAlive, intrnlAPI.Alive)
 	intrnlGrp.GET(URIHealth, intrnlAPI.Health)
 
+	intrnlGrp.POST(URITenants, intrnlAPI.ProvisionTenant)
 	intrnlGrp.POST(URITenantDevices, intrnlAPI.ProvisionDevice)
 	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
 

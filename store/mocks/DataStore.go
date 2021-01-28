@@ -100,6 +100,20 @@ func (_m *DataStore) Migrate(ctx context.Context, version string, automigrate bo
 	return r0
 }
 
+// MigrateLatest provides a mock function with given fields: ctx
+func (_m *DataStore) MigrateLatest(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Ping provides a mock function with given fields: ctx
 func (_m *DataStore) Ping(ctx context.Context) error {
 	ret := _m.Called(ctx)

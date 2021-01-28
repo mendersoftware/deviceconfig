@@ -41,6 +41,9 @@ type DataStore interface {
 	// all deviceconfig collections will be migrated to the given version.
 	Migrate(ctx context.Context, version string, automigrate bool) error
 
+	// MigrateLatest calls Migrate with the latest schema version.
+	MigrateLatest(ctx context.Context) error
+
 	// InsertDeviceConfig inserts a new device configuration
 	InsertDevice(ctx context.Context, dev model.Device) error
 

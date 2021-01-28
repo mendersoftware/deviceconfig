@@ -72,3 +72,7 @@ func (db *MongoStore) Migrate(ctx context.Context, version string, automigrate b
 	}
 	return nil
 }
+
+func (db *MongoStore) MigrateLatest(ctx context.Context) error {
+	return db.Migrate(ctx, DbVersion, true)
+}
