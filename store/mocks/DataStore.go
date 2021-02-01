@@ -72,6 +72,27 @@ func (_m *DataStore) DropDatabase(ctx context.Context) error {
 	return r0
 }
 
+// GetDevice provides a mock function with given fields: ctx, devID
+func (_m *DataStore) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
+	ret := _m.Called(ctx, devID)
+
+	var r0 model.Device
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) model.Device); ok {
+		r0 = rf(ctx, devID)
+	} else {
+		r0 = ret.Get(0).(model.Device)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, devID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // InsertDevice provides a mock function with given fields: ctx, dev
 func (_m *DataStore) InsertDevice(ctx context.Context, dev model.Device) error {
 	ret := _m.Called(ctx, dev)
@@ -121,6 +142,20 @@ func (_m *DataStore) Ping(ctx context.Context) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
 		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpsertExpectedConfiguration provides a mock function with given fields: ctx, dev
+func (_m *DataStore) UpsertExpectedConfiguration(ctx context.Context, dev model.Device) error {
+	ret := _m.Called(ctx, dev)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, model.Device) error); ok {
+		r0 = rf(ctx, dev)
 	} else {
 		r0 = ret.Error(0)
 	}
