@@ -40,7 +40,7 @@ func main() {
 func doMain(args []string) {
 	var configPath string
 
-	app := &cli.App{
+	app:=&cli.App{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name: "config",
