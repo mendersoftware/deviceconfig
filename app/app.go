@@ -42,6 +42,9 @@ type App interface {
 
 	ProvisionDevice(ctx context.Context, dev model.NewDevice) error
 	DecommissionDevice(ctx context.Context, devID uuid.UUID) error
+
+	SetConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
+	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
 }
 
 // app is an app object
@@ -86,6 +89,21 @@ func (a *app) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {
 		UpdatedTS: time.Now(),
 	})
 }
+
 func (a *app) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
 	return a.store.DeleteDevice(ctx, devID)
+}
+
+func (a *app) SetConfiguration(ctx context.Context,
+	devID uuid.UUID,
+	configuration model.Attributes) error {
+	return a.store.UpsertExpectedConfiguration(ctx, model.Device{
+		ID:                devID,
+		DesiredAttributes: configuration,
+		UpdatedTS:         time.Now(),
+	})
+}
+
+func (a *app) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
+	return a.store.GetDevice(ctx, devID)
 }

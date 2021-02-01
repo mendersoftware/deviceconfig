@@ -47,6 +47,12 @@ type DataStore interface {
 	// InsertDeviceConfig inserts a new device configuration
 	InsertDevice(ctx context.Context, dev model.Device) error
 
+	// UpsertDeviceConfig updates or inserts a new device configuration
+	UpsertExpectedConfiguration(ctx context.Context, dev model.Device) error
+
 	// DeleteDevice removes the device object with the given ID from the database.
 	DeleteDevice(ctx context.Context, devID uuid.UUID) error
+
+	// GetDevice returns a device
+	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
 }
