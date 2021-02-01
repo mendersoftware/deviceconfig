@@ -15,12 +15,13 @@
 package model
 
 import (
+	"encoding/json"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type Attribute struct {
 	Key   string      `json:"key" bson:"key"`
-	Value interface{} `json:"value" bson:"key"`
+	Value interface{} `json:"value" bson:"value"`
 }
 
 func (attr Attribute) Validate() error {
@@ -30,8 +31,50 @@ func (attr Attribute) Validate() error {
 			lengthLessThan4096,
 		),
 		validation.Field(&attr.Value,
-			validation.Required,
 			validateAttributeValue,
+			lengthLessThan4096,
 		),
 	)
+}
+
+type Attributes []Attribute
+
+func map2Attributes(configurationMap map[string]interface{}) Attributes {
+	attributes := make(Attributes, len(configurationMap))
+	i := 0
+	for k, v := range configurationMap {
+		attributes[i] = Attribute{
+			Key:   k,
+			Value: v,
+		}
+		i++
+	}
+
+	return attributes
+}
+
+func (a *Attributes) UnmarshalJSON(b []byte) error {
+	var m map[string]interface{}
+
+	err := json.Unmarshal(b, &m)
+	if err != nil {
+		return err
+	}
+
+	*a = map2Attributes(m)
+
+	return nil
+}
+
+func attributes2Map(attributes []Attribute) map[string]interface{} {
+	configurationMap := make(map[string]interface{}, len(attributes))
+	for _, a := range attributes {
+		configurationMap[a.Key] = a.Value.(string)
+	}
+
+	return configurationMap
+}
+
+func (a Attributes) MarshalJSON() ([]byte, error) {
+	return json.Marshal(attributes2Map(a))
 }

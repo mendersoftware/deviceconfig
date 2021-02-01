@@ -19,9 +19,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
+
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
-	"github.com/pkg/errors"
 
 	"github.com/mendersoftware/deviceconfig/app"
 	"github.com/mendersoftware/deviceconfig/model"

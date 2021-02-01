@@ -57,7 +57,7 @@ func TestDeviceValidate(t *testing.T) {
 		},
 		Error: errors.New(
 			"invalid device object: " +
-				"current: (0: (value: invalid type: bool.); " +
+				"reported: (0: (value: invalid type: bool.); " +
 				"1: (value: invalid type: func().).).",
 		),
 	}, {

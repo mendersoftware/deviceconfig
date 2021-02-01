@@ -38,6 +38,8 @@ const (
 	URITenantDevices = "/tenants/:tenant_id/devices"
 	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
 
+	URIConfiguration = "/configurations/device/:device_id"
+
 	URIAlive  = "/alive"
 	URIHealth = "/health"
 )
@@ -69,10 +71,14 @@ func NewRouter(app app.App) http.Handler {
 	intrnlGrp.POST(URITenantDevices, intrnlAPI.ProvisionDevice)
 	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
 
-	// mgmtAPI := NewManagementAPI(app)
+	mgmtAPI := NewManagementAPI(app)
 	mgmtGrp := router.Group(URIManagement)
+
 	// identity middleware for collecting JWT claims into request Context.
 	mgmtGrp.Use(identity.Middleware())
+	mgmtGrp.GET(URIConfiguration, mgmtAPI.GetConfiguration)
+	mgmtGrp.PUT(URIConfiguration, mgmtAPI.SetConfiguration)
+
 	// cors middleware for checking origin headers.
 	mgmtGrp.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,

@@ -24,9 +24,9 @@ var (
 	lengthLessThan4096 = validation.Length(0, 4096)
 
 	validateAttributeValue = validation.By(func(value interface{}) error {
-		switch t := value.(type) {
+		switch value.(type) {
 		case string:
-			return lengthLessThan4096.Validate(t)
+			return nil
 
 		default:
 			// NOTE: we will support more types in the future

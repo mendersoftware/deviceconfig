@@ -27,15 +27,15 @@ type Device struct {
 	ID uuid.UUID `bson:"_id" json:"id"`
 
 	// DesiredAttributes is the configured attributes for the device.
-	DesiredAttributes []Attribute `bson:"desired,omitempty" json:"desired"`
+	DesiredAttributes Attributes `bson:"configured,omitempty" json:"configured"`
 	// CurrentAttributes is the configuration reported by the device.
-	CurrentAttributes []Attribute `bson:"current,omitempty" json:"current"`
+	CurrentAttributes Attributes `bson:"reported,omitempty" json:"reported"`
 
 	// UpdatedTS holds the timestamp for when the desired state changed,
 	// including when the object was created.
 	UpdatedTS time.Time `bson:"updated_ts" json:"updated_ts"`
 	// ReportTS holds the timestamp when the device last reported its' state.
-	ReportTS time.Time `bson:"report_ts,omitempty" json:"report_ts,omitempty"`
+	ReportTS time.Time `bson:"reported_ts,omitempty" json:"reported_ts,omitempty"`
 }
 
 func (dev Device) Validate() error {

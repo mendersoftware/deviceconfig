@@ -44,6 +44,27 @@ func (_m *App) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
 	return r0
 }
 
+// GetDevice provides a mock function with given fields: ctx, devID
+func (_m *App) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
+	ret := _m.Called(ctx, devID)
+
+	var r0 model.Device
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) model.Device); ok {
+		r0 = rf(ctx, devID)
+	} else {
+		r0 = ret.Get(0).(model.Device)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, devID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // HealthCheck provides a mock function with given fields: ctx
 func (_m *App) HealthCheck(ctx context.Context) error {
 	ret := _m.Called(ctx)
@@ -79,6 +100,20 @@ func (_m *App) ProvisionTenant(ctx context.Context, tenant model.NewTenant) erro
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, model.NewTenant) error); ok {
 		r0 = rf(ctx, tenant)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetConfiguration provides a mock function with given fields: ctx, devID, configuration
+func (_m *App) SetConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error {
+	ret := _m.Called(ctx, devID, configuration)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.Attributes) error); ok {
+		r0 = rf(ctx, devID, configuration)
 	} else {
 		r0 = ret.Error(0)
 	}
