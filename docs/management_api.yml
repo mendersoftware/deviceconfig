@@ -3,7 +3,7 @@ openapi: 3.0.3
 info:
   title: Device Configure Management API
   description: |
-    API for managing persistent device connections.
+    API for managing device configuration.
     Intended for use by the web GUI
 
   version: "1"
@@ -28,24 +28,51 @@ tags:
   - name: ManagementAPI
 
 paths:
-  /configuration:
+  /configurations/device/{deviceId}:
     get:
-      operationId: List Parameters
+      operationId: Get key-value pair store
       tags:
         - ManagementAPI
-      summary: Get existing parameters
-      # parameters: {}
+      summary: Query the configuration store; retrieve all key-value pairs
+      parameters:
+        - in: path
+          name: deviceId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the device to query.
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Parameter'
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  configured:
+                    type: object
+                    $ref: '#/components/schemas/Configuration'
+                  reported:
+                    type: object
+                    $ref: '#/components/schemas/Configuration'
+                  reported_ts:
+                    type: string
+                    format: date-time
+                  updated_ts:
+                    type: string
+                    format: date-time
         400:
-          description: Invalid Request.
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Not Found.
           content:
             application/json:
               schema:
@@ -56,55 +83,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
     put:
-      operationId: Set Configuration
+      operationId: Store a set of key-value pairs
       tags:
         - ManagementAPI
-      summary: Assign configuration parameters
+      summary: Set a key-value pair store, updating if existing, removing if empty
       requestBody:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/Parameter'
-                - type: array
-                  items:
-                    $ref: '#/components/schemas/Parameter'
-      responses:
-        200:
-          description: Parameters set and updated successfully.
-        400:
-          description: Invalid Request.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        500:
-          description: Internal Server Error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    delete:
-      operationId: Unset Configuration
-      tags:
-        - ManagementAPI
-      summary: Assign configuration parameters
+              $ref: '#/components/schemas/Configuration'
       parameters:
-        - name: 'key'
-          in: 'query'
+        - in: path
+          name: deviceId
           schema:
-            description: Name of the parameter(s) to delete.
-            type: "array"
-            items:
-              type: string
+            type: string
+          required: true
+          description: ID of the device to query.
       responses:
-        200:
-          description: Parameters set and updated successfully.
+        204:
+          description: Created
         400:
-          description: Invalid Request.
+          description: Bad Request.
           content:
             application/json:
               schema:
@@ -115,8 +115,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-
 
 components:
   securitySchemes:
@@ -130,18 +128,10 @@ components:
         The JWT can be alternatively passed as a cookie named "JWT".
 
   schemas:
-    Parameter:
+    Configuration:
       type: object
-      properties:
-        key:
-          type: string
-          description: Configuration key name.
-        value:
-          anyOf:
-            - type: string
-            # - type: number
-            # - type: boolean
-            # - type: array
+      additionalProperties:
+        type: string
 
     Error:
       type: object
@@ -183,12 +173,11 @@ components:
 
     ForbiddenError:
       description: |
-          The user is not permitted to access the remote terminal
-          for a given device.
+          The user is not permitted to access the resource.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            error: "Access denied (RBAC)"
+            error: "Forbidden"
             request_id: "eed14d55-d996-42cd-8248-e806663810a8"
