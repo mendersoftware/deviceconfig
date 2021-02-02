@@ -30,7 +30,7 @@ tags:
 paths:
   /configurations/device/{deviceId}:
     get:
-      operationId: Get key-value pair store
+      operationId: Get Device Configuration
       tags:
         - ManagementAPI
       summary: Query the configuration store; retrieve all key-value pairs
@@ -84,7 +84,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     put:
-      operationId: Store a set of key-value pairs
+      operationId: Set Device Configuration
       tags:
         - ManagementAPI
       summary: Set a key-value pair store, updating if existing, removing if empty
