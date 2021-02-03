@@ -162,3 +162,17 @@ func (_m *DataStore) UpsertExpectedConfiguration(ctx context.Context, dev model.
 
 	return r0
 }
+
+// UpsertReportedConfiguration provides a mock function with given fields: ctx, dev
+func (_m *DataStore) UpsertReportedConfiguration(ctx context.Context, dev model.Device) error {
+	ret := _m.Called(ctx, dev)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, model.Device) error); ok {
+		r0 = rf(ctx, dev)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

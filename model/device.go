@@ -17,7 +17,7 @@ package model
 import (
 	"time"
 
-	"github.com/go-ozzo/ozzo-validation/v4"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -43,7 +43,6 @@ func (dev Device) Validate() error {
 		validation.Field(&dev.ID, uuidNotEmpty),
 		validation.Field(&dev.DesiredAttributes),
 		validation.Field(&dev.CurrentAttributes),
-		validation.Field(&dev.UpdatedTS, validation.Required),
 	)
 	return errors.Wrap(err, "invalid device object")
 }

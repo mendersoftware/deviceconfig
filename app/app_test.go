@@ -183,6 +183,80 @@ func TestSetConfiguration(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestSetReportedConfiguration(t *testing.T) {
+	t.Parallel()
+	ctx := context.TODO()
+	dev := model.NewDevice{
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+	}
+	device := model.Device{
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		DesiredAttributes: []model.Attribute{
+			{
+				Key:   "hostname",
+				Value: "some0",
+			},
+		},
+		CurrentAttributes: []model.Attribute{
+			{
+				Key:   "hostname",
+				Value: "some0other",
+			},
+		},
+	}
+	deviceMatcher := mock.MatchedBy(func(d model.Device) bool {
+		if !assert.Equal(t, dev.ID, d.ID) {
+			return false
+		}
+		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+	})
+	deviceMatcherReport := mock.MatchedBy(func(d model.Device) bool {
+		if !assert.Equal(t, dev.ID, d.ID) {
+			return false
+		}
+		return assert.WithinDuration(t, time.Now(), d.ReportTS, time.Minute)
+	})
+
+	ds := new(mstore.DataStore)
+	defer ds.AssertExpectations(t)
+	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
+	ds.On("UpsertReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
+	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
+
+	app := New(ds, Config{})
+	err := app.ProvisionDevice(ctx, dev)
+	assert.NoError(t, err)
+
+	err = app.SetReportedConfiguration(ctx, dev.ID, device.CurrentAttributes)
+	assert.NoError(t, err)
+
+	d, err := app.GetDevice(ctx, dev.ID)
+	assert.NoError(t, err)
+
+	assert.Equal(t, d.CurrentAttributes, device.CurrentAttributes)
+
+	err = app.SetReportedConfiguration(ctx, dev.ID, []model.Attribute{
+		{
+			Key:   "hostname",
+			Value: "other",
+		},
+	})
+	assert.NoError(t, err)
+
+	d, err = app.GetDevice(ctx, dev.ID)
+	assert.NoError(t, err)
+
+	assert.NotEqual(t, device.CurrentAttributes, d.CurrentAttributes[0])
+
+	err = app.SetReportedConfiguration(ctx, dev.ID, []model.Attribute{
+		{
+			Key:   "hostname",
+			Value: "",
+		},
+	})
+	assert.NoError(t, err)
+}
+
 func map2Attributes(configurationMap map[string]interface{}) model.Attributes {
 	attributes := make(model.Attributes, len(configurationMap))
 	i := 0

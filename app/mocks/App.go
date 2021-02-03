@@ -120,3 +120,17 @@ func (_m *App) SetConfiguration(ctx context.Context, devID uuid.UUID, configurat
 
 	return r0
 }
+
+// SetReportedConfiguration provides a mock function with given fields: ctx, devID, configuration
+func (_m *App) SetReportedConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error {
+	ret := _m.Called(ctx, devID, configuration)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, model.Attributes) error); ok {
+		r0 = rf(ctx, devID, configuration)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

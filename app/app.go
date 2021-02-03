@@ -44,6 +44,7 @@ type App interface {
 	DecommissionDevice(ctx context.Context, devID uuid.UUID) error
 
 	SetConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
+	SetReportedConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
 	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
 }
 
@@ -101,6 +102,16 @@ func (a *app) SetConfiguration(ctx context.Context,
 		ID:                devID,
 		DesiredAttributes: configuration,
 		UpdatedTS:         time.Now(),
+	})
+}
+
+func (a *app) SetReportedConfiguration(ctx context.Context,
+	devID uuid.UUID,
+	configuration model.Attributes) error {
+	return a.store.UpsertReportedConfiguration(ctx, model.Device{
+		ID:                devID,
+		CurrentAttributes: configuration,
+		ReportTS:          time.Now(),
 	})
 }
 
