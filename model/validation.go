@@ -15,10 +15,14 @@
 package model
 
 import (
+	"fmt"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
+
+const maxNumberOfAttributes = 100
 
 var (
 	lengthLessThan4096 = validation.Length(0, 4096)
@@ -40,6 +44,18 @@ var (
 			return errors.Errorf("value is not a UUID type: %T", value)
 		} else if uid == uuid.Nil {
 			return errors.New("cannot be blank")
+		}
+		return nil
+	})
+
+	validateAttributes = validation.By(func(value interface{}) error {
+		attributes, ok := value.(Attributes)
+		if !ok {
+			return errors.Errorf("value is not an Attributes type: %T", value)
+		} else if len(attributes) > maxNumberOfAttributes {
+			msg := fmt.Sprintf("too many configuration attributes, maximum is %d",
+				maxNumberOfAttributes)
+			return errors.New(msg)
 		}
 		return nil
 	})

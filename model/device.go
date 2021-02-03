@@ -41,8 +41,8 @@ type Device struct {
 func (dev Device) Validate() error {
 	err := validation.ValidateStruct(&dev,
 		validation.Field(&dev.ID, uuidNotEmpty),
-		validation.Field(&dev.ConfiguredAttributes),
-		validation.Field(&dev.ReportedAttributes),
+		validation.Field(&dev.ConfiguredAttributes, validateAttributes),
+		validation.Field(&dev.ReportedAttributes, validateAttributes),
 	)
 	return errors.Wrap(err, "invalid device object")
 }
