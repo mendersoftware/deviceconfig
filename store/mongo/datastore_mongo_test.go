@@ -257,13 +257,13 @@ func TestGetDevice(t *testing.T) {
 			Devices: []model.Device{
 				{
 					ID: deviceID,
-					DesiredAttributes: []model.Attribute{
+					ConfiguredAttributes: []model.Attribute{
 						{
 							Key:   "key0",
 							Value: "value0",
 						},
 					},
-					CurrentAttributes: []model.Attribute{
+					ReportedAttributes: []model.Attribute{
 						{
 							Key:   "key2",
 							Value: "value2",
@@ -275,13 +275,13 @@ func TestGetDevice(t *testing.T) {
 			FoundDevices: []model.Device{
 				{
 					ID: deviceID,
-					DesiredAttributes: []model.Attribute{
+					ConfiguredAttributes: []model.Attribute{
 						{
 							Key:   "key0",
 							Value: "value0",
 						},
 					},
-					CurrentAttributes: []model.Attribute{
+					ReportedAttributes: []model.Attribute{
 						{
 							Key:   "key2",
 							Value: "value2",
@@ -298,13 +298,13 @@ func TestGetDevice(t *testing.T) {
 			Devices: []model.Device{
 				{
 					ID: deviceID,
-					DesiredAttributes: []model.Attribute{
+					ConfiguredAttributes: []model.Attribute{
 						{
 							Key:   "key0",
 							Value: "value0",
 						},
 					},
-					CurrentAttributes: []model.Attribute{
+					ReportedAttributes: []model.Attribute{
 						{
 							Key:   "key2",
 							Value: "value2",
@@ -315,13 +315,13 @@ func TestGetDevice(t *testing.T) {
 			},
 			FoundDevices: []model.Device{
 				{
-					DesiredAttributes: []model.Attribute{
+					ConfiguredAttributes: []model.Attribute{
 						{
 							Key:   "key0",
 							Value: "value0",
 						},
 					},
-					CurrentAttributes: []model.Attribute{
+					ReportedAttributes: []model.Attribute{
 						{
 							Key:   "key2",
 							Value: "value2",
@@ -369,7 +369,7 @@ func TestGetDevice(t *testing.T) {
 	}
 }
 
-func TestUpsertExpectedConfiguration(t *testing.T) {
+func TestUpsertConfiguration(t *testing.T) {
 	t.Parallel()
 	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io"))
 	testCases := []struct {
@@ -382,7 +382,7 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 		Error error
 	}{
 		{
-			Name: "ok new expected set",
+			Name: "ok new configured set",
 
 			Devices: []model.Device{
 				{
@@ -394,7 +394,7 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 			UpdatedDevices: []model.Device{
 				{
 					ID: deviceID,
-					DesiredAttributes: model.Attributes{
+					ConfiguredAttributes: model.Attributes{
 						{
 							Key:   "key0",
 							Value: "value0",
@@ -406,12 +406,12 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 		},
 
 		{
-			Name: "ok removed expected",
+			Name: "ok removed configured",
 
 			Devices: []model.Device{
 				{
 					ID: deviceID,
-					DesiredAttributes: model.Attributes{
+					ConfiguredAttributes: model.Attributes{
 						{
 							Key:   "key0",
 							Value: "value0",
@@ -423,9 +423,9 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 
 			UpdatedDevices: []model.Device{
 				{
-					ID:                deviceID,
-					DesiredAttributes: model.Attributes{},
-					UpdatedTS:         time.Now(),
+					ID:                   deviceID,
+					ConfiguredAttributes: model.Attributes{},
+					UpdatedTS:            time.Now(),
 				},
 			},
 		},
@@ -435,7 +435,7 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 
 			Devices: []model.Device{
 				{
-					DesiredAttributes: model.Attributes{
+					ConfiguredAttributes: model.Attributes{
 						{
 							Key:   "key0",
 							Value: "value0",
@@ -447,9 +447,9 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 
 			UpdatedDevices: []model.Device{
 				{
-					ID:                deviceID,
-					DesiredAttributes: model.Attributes{},
-					UpdatedTS:         time.Now(),
+					ID:                   deviceID,
+					ConfiguredAttributes: model.Attributes{},
+					UpdatedTS:            time.Now(),
 				},
 			},
 
@@ -471,7 +471,7 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 			}
 
 			for _, dev := range tc.Devices {
-				err = ds.UpsertExpectedConfiguration(tc.CTX, dev)
+				err = ds.UpsertConfiguration(tc.CTX, dev)
 				if err != nil {
 					if tc.Error != nil {
 						assert.EqualError(t, tc.Error, err.Error())
@@ -484,12 +484,12 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 				d, err := ds.GetDevice(tc.CTX, dev.ID)
 				assert.NoError(t, err)
 				assert.Equal(t, dev.ID, d.ID)
-				assert.Equal(t, dev.DesiredAttributes, d.DesiredAttributes)
-				assert.Equal(t, dev.CurrentAttributes, d.CurrentAttributes)
+				assert.Equal(t, dev.ConfiguredAttributes, d.ConfiguredAttributes)
+				assert.Equal(t, dev.ReportedAttributes, d.ReportedAttributes)
 			}
 
 			for _, dev := range tc.UpdatedDevices {
-				err = ds.UpsertExpectedConfiguration(tc.CTX, dev)
+				err = ds.UpsertConfiguration(tc.CTX, dev)
 				if err != nil {
 					break
 				}
@@ -498,8 +498,8 @@ func TestUpsertExpectedConfiguration(t *testing.T) {
 				d, err := ds.GetDevice(tc.CTX, dev.ID)
 				assert.NoError(t, err)
 				assert.Equal(t, dev.ID, d.ID)
-				assert.Equal(t, dev.DesiredAttributes, d.DesiredAttributes)
-				assert.Equal(t, dev.CurrentAttributes, d.CurrentAttributes)
+				assert.Equal(t, dev.ConfiguredAttributes, d.ConfiguredAttributes)
+				assert.Equal(t, dev.ReportedAttributes, d.ReportedAttributes)
 			}
 
 			assert.NoError(t, err)
@@ -532,7 +532,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 			UpdatedDevices: []model.Device{
 				{
 					ID: deviceID,
-					CurrentAttributes: model.Attributes{
+					ReportedAttributes: model.Attributes{
 						{
 							Key:   "key0",
 							Value: "value0",
@@ -548,7 +548,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 			Devices: []model.Device{
 				{
 					ID: deviceID,
-					CurrentAttributes: model.Attributes{
+					ReportedAttributes: model.Attributes{
 						{
 							Key:   "key0",
 							Value: "value0",
@@ -560,9 +560,9 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 
 			UpdatedDevices: []model.Device{
 				{
-					ID:                deviceID,
-					CurrentAttributes: model.Attributes{},
-					UpdatedTS:         time.Now(),
+					ID:                 deviceID,
+					ReportedAttributes: model.Attributes{},
+					UpdatedTS:          time.Now(),
 				},
 			},
 		},
@@ -571,7 +571,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 
 			Devices: []model.Device{
 				{
-					CurrentAttributes: model.Attributes{
+					ReportedAttributes: model.Attributes{
 						{
 							Key:   "key0",
 							Value: "value0",
@@ -583,9 +583,9 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 
 			UpdatedDevices: []model.Device{
 				{
-					ID:                deviceID,
-					CurrentAttributes: model.Attributes{},
-					UpdatedTS:         time.Now(),
+					ID:                 deviceID,
+					ReportedAttributes: model.Attributes{},
+					UpdatedTS:          time.Now(),
 				},
 			},
 
@@ -620,8 +620,8 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 				d, err := ds.GetDevice(tc.CTX, dev.ID)
 				assert.NoError(t, err)
 				assert.Equal(t, dev.ID, d.ID)
-				assert.Equal(t, dev.DesiredAttributes, d.DesiredAttributes)
-				assert.Equal(t, dev.CurrentAttributes, d.CurrentAttributes)
+				assert.Equal(t, dev.ConfiguredAttributes, d.ConfiguredAttributes)
+				assert.Equal(t, dev.ReportedAttributes, d.ReportedAttributes)
 			}
 
 			for _, dev := range tc.UpdatedDevices {
@@ -634,8 +634,8 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 				d, err := ds.GetDevice(tc.CTX, dev.ID)
 				assert.NoError(t, err)
 				assert.Equal(t, dev.ID, d.ID)
-				assert.Equal(t, dev.DesiredAttributes, d.DesiredAttributes)
-				assert.Equal(t, dev.CurrentAttributes, d.CurrentAttributes)
+				assert.Equal(t, dev.ConfiguredAttributes, d.ConfiguredAttributes)
+				assert.Equal(t, dev.ReportedAttributes, d.ReportedAttributes)
 			}
 
 			assert.NoError(t, err)

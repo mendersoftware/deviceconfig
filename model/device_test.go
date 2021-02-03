@@ -35,7 +35,7 @@ func TestDeviceValidate(t *testing.T) {
 
 		Device: Device{
 			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
-			DesiredAttributes: []Attribute{{
+			ConfiguredAttributes: []Attribute{{
 				Key:   "HOME",
 				Value: "/root",
 			}},
@@ -46,7 +46,7 @@ func TestDeviceValidate(t *testing.T) {
 
 		Device: Device{
 			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
-			CurrentAttributes: []Attribute{{
+			ReportedAttributes: []Attribute{{
 				Key:   "illegal",
 				Value: true,
 			}, {
@@ -65,8 +65,7 @@ func TestDeviceValidate(t *testing.T) {
 
 		Device: Device{},
 		Error: errors.New(
-			"invalid device object: id: cannot be blank; " +
-				"updated_ts: cannot be blank.",
+			"invalid device object: id: cannot be blank.",
 		),
 	}}
 	for i := range testCases {

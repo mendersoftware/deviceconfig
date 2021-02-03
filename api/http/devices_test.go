@@ -117,7 +117,7 @@ func TestDevicesSetConfiguration(t *testing.T) {
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
-					"expected": []map[string]interface{}{
+					"configured": []map[string]interface{}{
 						{
 							"key":   "key0",
 							"value": "value0",
@@ -145,7 +145,7 @@ func TestDevicesSetConfiguration(t *testing.T) {
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
-					"expected": []map[string]interface{}{
+					"configured": []map[string]interface{}{
 						{
 							"key":   "key0",
 							"value": "value0",
@@ -232,7 +232,7 @@ func TestDevicesGetConfiguration(t *testing.T) {
 
 	device := model.Device{
 		ID: uuid.New(),
-		DesiredAttributes: []model.Attribute{
+		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "key1",
 				Value: "value1",
@@ -242,7 +242,7 @@ func TestDevicesGetConfiguration(t *testing.T) {
 				Value: "value3",
 			},
 		},
-		CurrentAttributes: []model.Attribute{
+		ReportedAttributes: []model.Attribute{
 			{
 				Key:   "key0",
 				Value: "value0",
@@ -387,7 +387,7 @@ func TestDevicesGetConfiguration(t *testing.T) {
 				var d map[string]interface{}
 				json.Unmarshal(w.Body.Bytes(), &d)
 				t.Logf("got: %+v", d)
-				assert.Equal(t, d, attributes2Map(device.DesiredAttributes))
+				assert.Equal(t, d, attributes2Map(device.ConfiguredAttributes))
 			}
 			if tc.Error != nil {
 				b, _ := json.Marshal(tc.Error)

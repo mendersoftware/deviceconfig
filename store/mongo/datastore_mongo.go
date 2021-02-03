@@ -157,7 +157,7 @@ func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error 
 	return errors.Wrap(err, "mongo: failed to store device configuration")
 }
 
-func (db *MongoStore) UpsertExpectedConfiguration(ctx context.Context, dev model.Device) error {
+func (db *MongoStore) UpsertConfiguration(ctx context.Context, dev model.Device) error {
 	if err := dev.Validate(); err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (db *MongoStore) UpsertExpectedConfiguration(ctx context.Context, dev model
 		"$set": bson.D{
 			{
 				Key:   fieldConfigured,
-				Value: dev.DesiredAttributes,
+				Value: dev.ConfiguredAttributes,
 			},
 			{
 				Key:   fieldUpdatedTs,
@@ -201,7 +201,7 @@ func (db *MongoStore) UpsertReportedConfiguration(ctx context.Context, dev model
 		"$set": bson.D{
 			{
 				Key:   fieldReported,
-				Value: dev.CurrentAttributes,
+				Value: dev.ReportedAttributes,
 			},
 			{
 				Key:   fieldReportedTs,

@@ -18,13 +18,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/mendersoftware/deviceconfig/store"
-	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mendersoftware/deviceconfig/store"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/google/uuid"
 	mapp "github.com/mendersoftware/deviceconfig/app/mocks"
@@ -128,7 +129,7 @@ func TestSetConfiguration(t *testing.T) {
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
-					"expected": []map[string]interface{}{
+					"configured": []map[string]interface{}{
 						{
 							"key":   "key0",
 							"value": "value0",
@@ -161,7 +162,7 @@ func TestSetConfiguration(t *testing.T) {
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
-					"expected": []map[string]interface{}{
+					"configured": []map[string]interface{}{
 						{
 							"key":   "key0",
 							"value": "value0",
@@ -194,7 +195,7 @@ func TestSetConfiguration(t *testing.T) {
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
-					"expected": []map[string]interface{}{
+					"configured": []map[string]interface{}{
 						{
 							"key":   "key0",
 							"value": "value0",
@@ -225,7 +226,7 @@ func TestSetConfiguration(t *testing.T) {
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
-					"expected": []map[string]interface{}{
+					"configured": []map[string]interface{}{
 						{
 							"key":   "key0",
 							"value": "value0",
@@ -301,7 +302,7 @@ func TestGetConfiguration(t *testing.T) {
 
 	device := model.Device{
 		ID: uuid.New(),
-		DesiredAttributes: []model.Attribute{
+		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "key0",
 				Value: "value0",
@@ -311,7 +312,7 @@ func TestGetConfiguration(t *testing.T) {
 				Value: "value2",
 			},
 		},
-		CurrentAttributes: []model.Attribute{
+		ReportedAttributes: []model.Attribute{
 			{
 				Key:   "key1",
 				Value: "value1",
@@ -531,7 +532,7 @@ func TestGetConfiguration(t *testing.T) {
 				var d map[string]interface{}
 				json.Unmarshal(w.Body.Bytes(), &d)
 				t.Logf("got: %+v", d)
-				assert.Equal(t, d["configured"], attributes2Map(device.DesiredAttributes))
+				assert.Equal(t, d["configured"], attributes2Map(device.ConfiguredAttributes))
 			}
 			if tc.Error != nil {
 				b, _ := json.Marshal(tc.Error)

@@ -98,10 +98,10 @@ func (a *app) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
 func (a *app) SetConfiguration(ctx context.Context,
 	devID uuid.UUID,
 	configuration model.Attributes) error {
-	return a.store.UpsertExpectedConfiguration(ctx, model.Device{
-		ID:                devID,
-		DesiredAttributes: configuration,
-		UpdatedTS:         time.Now(),
+	return a.store.UpsertConfiguration(ctx, model.Device{
+		ID:                   devID,
+		ConfiguredAttributes: configuration,
+		UpdatedTS:            time.Now(),
 	})
 }
 
@@ -109,9 +109,9 @@ func (a *app) SetReportedConfiguration(ctx context.Context,
 	devID uuid.UUID,
 	configuration model.Attributes) error {
 	return a.store.UpsertReportedConfiguration(ctx, model.Device{
-		ID:                devID,
-		CurrentAttributes: configuration,
-		ReportTS:          time.Now(),
+		ID:                 devID,
+		ReportedAttributes: configuration,
+		ReportTS:           time.Now(),
 	})
 }
 

@@ -48,7 +48,7 @@ type DataStore interface {
 	InsertDevice(ctx context.Context, dev model.Device) error
 
 	// UpsertDeviceConfig updates or inserts a new device configuration
-	UpsertExpectedConfiguration(ctx context.Context, dev model.Device) error
+	UpsertConfiguration(ctx context.Context, dev model.Device) error
 
 	// UpsertReportedConfiguration updates or inserts a new device reported configuration
 	UpsertReportedConfiguration(ctx context.Context, dev model.Device) error
