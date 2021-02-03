@@ -49,7 +49,40 @@ def make_user_token(user_id=None, plan=None, tenant_id=None):
     )
 
 
+def make_device_token(device_id=None, plan=None, tenant_id=None):
+    if device_id is None:
+        device_id = str(uuid.uuid4())
+    claims = {
+        "jti": str(uuid.uuid4()),
+        "sub": device_id,
+        "exp": int((datetime.now(tz=timezone.utc) + timedelta(days=7)).timestamp()),
+        "mender.device": True,
+    }
+    if tenant_id is not None:
+        claims["mender.tenant"] = tenant_id
+    if plan is not None:
+        claims["mender.plan"] = plan
+
+    return ".".join(
+        [
+            base64.urlsafe_b64encode(b'{"alg":"RS256","typ":"JWT"}')
+            .decode("ascii")
+            .strip("="),
+            base64.urlsafe_b64encode(json.dumps(claims).encode())
+            .decode("ascii")
+            .strip("="),
+            base64.urlsafe_b64encode(b"Signature").decode("ascii").strip("="),
+        ]
+    )
+
+
 def management_api_with_params(user_id, plan=None, tenant_id=None):
     api_conf = management_api.Configuration.get_default_copy()
     api_conf.access_token = make_user_token(user_id, plan, tenant_id)
     return management_api.ManagementAPIClient(management_api.ApiClient(api_conf))
+
+
+def devices_api_with_params(device_id, plan=None, tenant_id=None):
+    api_conf = devices_api.Configuration.get_default_copy()
+    api_conf.access_token = make_device_token(device_id, plan, tenant_id)
+    return devices_api.DevicesAPIClient(devices_api.ApiClient(api_conf))
