@@ -15,15 +15,117 @@
 package http
 
 import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/mendersoftware/go-lib-micro/identity"
+	"github.com/mendersoftware/go-lib-micro/rest.utils"
+	"github.com/pkg/errors"
+
 	"github.com/mendersoftware/deviceconfig/app"
+	"github.com/mendersoftware/deviceconfig/model"
+	"github.com/mendersoftware/deviceconfig/store"
 )
 
 type DevicesAPI struct {
 	App app.App
 }
 
+var errInvalidIdentity = errors.New("forbidden: invalid identity data")
+
 func NewDevicesAPI(app app.App) *DevicesAPI {
 	return &DevicesAPI{
 		App: app,
 	}
+}
+
+func (api *DevicesAPI) SetConfiguration(c *gin.Context) {
+	var configuration model.Attributes
+
+	ctx := c.Request.Context()
+	identity := identity.FromContext(ctx)
+	if identity == nil || !identity.IsDevice {
+		rest.RenderError(c, http.StatusForbidden, errInvalidIdentity)
+		return
+	}
+
+	devID, err := uuid.Parse(identity.Subject)
+	if err != nil {
+		rest.RenderError(c,
+			http.StatusBadRequest,
+			errors.Wrap(err, "malformed device ID"),
+		)
+		return
+	}
+
+	err = c.ShouldBindJSON(&configuration)
+	if err != nil {
+		rest.RenderError(c,
+			http.StatusBadRequest,
+			errors.Wrap(err, "malformed request body"),
+		)
+		return
+	}
+
+	for _, a := range configuration {
+		if err := a.Validate(); err != nil {
+			rest.RenderError(c,
+				http.StatusBadRequest,
+				errors.Wrap(err, "invalid request body"),
+			)
+			return
+		}
+	}
+
+	err = api.App.SetReportedConfiguration(ctx, devID, configuration)
+	if err != nil {
+		c.Error(err) //nolint:errcheck
+		rest.RenderError(c,
+			http.StatusInternalServerError,
+			errors.New(http.StatusText(http.StatusInternalServerError)),
+		)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (api *DevicesAPI) GetConfiguration(c *gin.Context) {
+	ctx := c.Request.Context()
+	identity := identity.FromContext(ctx)
+	if identity == nil || !identity.IsDevice {
+		rest.RenderError(c, http.StatusForbidden, errInvalidIdentity)
+		return
+	}
+
+	devID, err := uuid.Parse(identity.Subject)
+	if err != nil {
+		rest.RenderError(c,
+			http.StatusBadRequest,
+			errors.Wrap(err, "malformed device ID"),
+		)
+		return
+	}
+
+	device, err := api.App.GetDevice(ctx, devID)
+	if err != nil {
+		switch cause := errors.Cause(err); cause {
+		case store.ErrDeviceNoExist:
+			c.Error(err) //nolint:errcheck
+			rest.RenderError(c,
+				http.StatusNotFound,
+				cause,
+			)
+			return
+		default:
+			c.Error(err) //nolint:errcheck
+			rest.RenderError(c,
+				http.StatusInternalServerError,
+				errors.New(http.StatusText(http.StatusInternalServerError)),
+			)
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, device.ConfiguredAttributes)
 }

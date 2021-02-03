@@ -38,7 +38,8 @@ const (
 	URITenantDevices = "/tenants/:tenant_id/devices"
 	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
 
-	URIConfiguration = "/configurations/device/:device_id"
+	URIConfiguration       = "/configurations/device/:device_id"
+	URIDeviceConfiguration = "/configuration"
 
 	URIAlive  = "/alive"
 	URIHealth = "/health"
@@ -108,9 +109,11 @@ func NewRouter(app app.App) http.Handler {
 		MaxAge: time.Hour * 12,
 	}))
 
-	// mgmtAPI := NewManagementAPI(app)
+	devAPI := NewDevicesAPI(app)
 	devGrp := router.Group(URIDevices)
 	devGrp.Use(identity.Middleware())
+	devGrp.GET(URIDeviceConfiguration, devAPI.GetConfiguration)
+	devGrp.PUT(URIDeviceConfiguration, devAPI.SetConfiguration)
 
 	return router
 }

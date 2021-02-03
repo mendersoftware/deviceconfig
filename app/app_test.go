@@ -123,13 +123,13 @@ func TestSetConfiguration(t *testing.T) {
 	}
 	device := model.Device{
 		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
-		DesiredAttributes: []model.Attribute{
+		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "hostname",
 				Value: "some0",
 			},
 		},
-		CurrentAttributes: []model.Attribute{
+		ReportedAttributes: []model.Attribute{
 			{
 				Key:   "hostname",
 				Value: "some0other",
@@ -146,20 +146,20 @@ func TestSetConfiguration(t *testing.T) {
 	ds := new(mstore.DataStore)
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-	ds.On("UpsertExpectedConfiguration", ctx, deviceMatcher).Return(nil)
+	ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
 	app := New(ds, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
-	err = app.SetConfiguration(ctx, dev.ID, device.DesiredAttributes)
+	err = app.SetConfiguration(ctx, dev.ID, device.ConfiguredAttributes)
 	assert.NoError(t, err)
 
 	d, err := app.GetDevice(ctx, dev.ID)
 	assert.NoError(t, err)
 
-	assert.Equal(t, d.DesiredAttributes, device.DesiredAttributes)
+	assert.Equal(t, d.ConfiguredAttributes, device.ConfiguredAttributes)
 
 	err = app.SetConfiguration(ctx, dev.ID, []model.Attribute{
 		{
@@ -172,9 +172,83 @@ func TestSetConfiguration(t *testing.T) {
 	d, err = app.GetDevice(ctx, dev.ID)
 	assert.NoError(t, err)
 
-	assert.NotEqual(t, device.DesiredAttributes, d.DesiredAttributes[0])
+	assert.NotEqual(t, device.ConfiguredAttributes, d.ConfiguredAttributes[0])
 
 	err = app.SetConfiguration(ctx, dev.ID, []model.Attribute{
+		{
+			Key:   "hostname",
+			Value: "",
+		},
+	})
+	assert.NoError(t, err)
+}
+
+func TestSetReportedConfiguration(t *testing.T) {
+	t.Parallel()
+	ctx := context.TODO()
+	dev := model.NewDevice{
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+	}
+	device := model.Device{
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ConfiguredAttributes: []model.Attribute{
+			{
+				Key:   "hostname",
+				Value: "some0",
+			},
+		},
+		ReportedAttributes: []model.Attribute{
+			{
+				Key:   "hostname",
+				Value: "some0other",
+			},
+		},
+	}
+	deviceMatcher := mock.MatchedBy(func(d model.Device) bool {
+		if !assert.Equal(t, dev.ID, d.ID) {
+			return false
+		}
+		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+	})
+	deviceMatcherReport := mock.MatchedBy(func(d model.Device) bool {
+		if !assert.Equal(t, dev.ID, d.ID) {
+			return false
+		}
+		return assert.WithinDuration(t, time.Now(), d.ReportTS, time.Minute)
+	})
+
+	ds := new(mstore.DataStore)
+	defer ds.AssertExpectations(t)
+	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
+	ds.On("UpsertReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
+	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
+
+	app := New(ds, Config{})
+	err := app.ProvisionDevice(ctx, dev)
+	assert.NoError(t, err)
+
+	err = app.SetReportedConfiguration(ctx, dev.ID, device.ReportedAttributes)
+	assert.NoError(t, err)
+
+	d, err := app.GetDevice(ctx, dev.ID)
+	assert.NoError(t, err)
+
+	assert.Equal(t, d.ReportedAttributes, device.ReportedAttributes)
+
+	err = app.SetReportedConfiguration(ctx, dev.ID, []model.Attribute{
+		{
+			Key:   "hostname",
+			Value: "other",
+		},
+	})
+	assert.NoError(t, err)
+
+	d, err = app.GetDevice(ctx, dev.ID)
+	assert.NoError(t, err)
+
+	assert.NotEqual(t, device.ReportedAttributes, d.ReportedAttributes[0])
+
+	err = app.SetReportedConfiguration(ctx, dev.ID, []model.Attribute{
 		{
 			Key:   "hostname",
 			Value: "",

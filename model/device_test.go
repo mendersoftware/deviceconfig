@@ -16,6 +16,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -25,6 +26,15 @@ import (
 
 func TestDeviceValidate(t *testing.T) {
 	t.Parallel()
+
+	tooManyAttributes := []Attribute{}
+	for i := 1; i <= maxNumberOfAttributes+1; i++ {
+		tooManyAttributes = append(tooManyAttributes, Attribute{
+			Key:   fmt.Sprintf("key%d", i),
+			Value: "value",
+		})
+	}
+
 	testCases := []struct {
 		Name string
 
@@ -35,7 +45,7 @@ func TestDeviceValidate(t *testing.T) {
 
 		Device: Device{
 			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
-			DesiredAttributes: []Attribute{{
+			ConfiguredAttributes: []Attribute{{
 				Key:   "HOME",
 				Value: "/root",
 			}},
@@ -46,7 +56,7 @@ func TestDeviceValidate(t *testing.T) {
 
 		Device: Device{
 			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
-			CurrentAttributes: []Attribute{{
+			ReportedAttributes: []Attribute{{
 				Key:   "illegal",
 				Value: true,
 			}, {
@@ -65,8 +75,17 @@ func TestDeviceValidate(t *testing.T) {
 
 		Device: Device{},
 		Error: errors.New(
-			"invalid device object: id: cannot be blank; " +
-				"updated_ts: cannot be blank.",
+			"invalid device object: id: cannot be blank.",
+		),
+	}, {
+		Name: "error, too many configuration keys",
+
+		Device: Device{
+			ID:                   uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
+			ConfiguredAttributes: tooManyAttributes,
+		},
+		Error: errors.New(
+			fmt.Sprintf("invalid device object: configured: too many configuration attributes, maximum is %d.", maxNumberOfAttributes),
 		),
 	}}
 	for i := range testCases {

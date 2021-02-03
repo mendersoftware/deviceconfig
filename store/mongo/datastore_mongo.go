@@ -34,6 +34,12 @@ import (
 const (
 	// CollDevices refers to the collection name for device configurations
 	CollDevices = "devices"
+	// fields
+	fieldID         = "_id"
+	fieldConfigured = "configured"
+	fieldReported   = "reported"
+	fieldUpdatedTs  = "updated_ts"
+	fieldReportedTs = "reported_ts"
 )
 
 type MongoStoreConfig struct {
@@ -151,25 +157,25 @@ func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error 
 	return errors.Wrap(err, "mongo: failed to store device configuration")
 }
 
-func (db *MongoStore) UpsertExpectedConfiguration(ctx context.Context, dev model.Device) error {
+func (db *MongoStore) UpsertConfiguration(ctx context.Context, dev model.Device) error {
 	if err := dev.Validate(); err != nil {
 		return err
 	}
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
 	fltr := bson.D{{
-		Key:   "_id",
+		Key:   fieldID,
 		Value: dev.ID,
 	}}
 
 	update := bson.M{
 		"$set": bson.D{
 			{
-				Key:   "configured",
-				Value: dev.DesiredAttributes,
+				Key:   fieldConfigured,
+				Value: dev.ConfiguredAttributes,
 			},
 			{
-				Key:   "updated_ts",
+				Key:   fieldUpdatedTs,
 				Value: time.Now().UTC(),
 			},
 		},
@@ -180,11 +186,39 @@ func (db *MongoStore) UpsertExpectedConfiguration(ctx context.Context, dev model
 	return errors.Wrap(err, "mongo: failed to store device configuration")
 }
 
+func (db *MongoStore) UpsertReportedConfiguration(ctx context.Context, dev model.Device) error {
+	if err := dev.Validate(); err != nil {
+		return err
+	}
+	collDevs := db.Database(ctx).Collection(CollDevices)
+
+	fltr := bson.D{{
+		Key:   fieldID,
+		Value: dev.ID,
+	}}
+
+	update := bson.M{
+		"$set": bson.D{
+			{
+				Key:   fieldReported,
+				Value: dev.ReportedAttributes,
+			},
+			{
+				Key:   fieldReportedTs,
+				Value: time.Now().UTC(),
+			},
+		},
+	}
+
+	_, err := collDevs.UpdateOne(ctx, fltr, update, mopts.Update().SetUpsert(true))
+	return errors.Wrap(err, "mongo: failed to store device reported configuration")
+}
+
 func (db *MongoStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
 	fltr := bson.D{{
-		Key:   "_id",
+		Key:   fieldID,
 		Value: devID,
 	}}
 	res, err := collDevs.DeleteOne(ctx, fltr)
@@ -199,7 +233,7 @@ func (db *MongoStore) GetDevice(ctx context.Context, devID uuid.UUID) (model.Dev
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
 	fltr := bson.D{{
-		Key:   "_id",
+		Key:   fieldID,
 		Value: devID,
 	}}
 	res := collDevs.FindOne(ctx, fltr)

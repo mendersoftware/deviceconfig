@@ -20,11 +20,9 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/mendersoftware/deviceconfig/store"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/google/uuid"
@@ -34,7 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetConfiguration(t *testing.T) {
+func TestDevicesSetConfiguration(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		Name string
@@ -54,23 +52,18 @@ func TestSetConfiguration(t *testing.T) {
 					"key0": "value0",
 				})
 
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					bytes.NewReader(body),
 				)
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIuZGV2aWNlIjp0cnVlLCJtZW5kZXIucGxhbiI6ImVudGVycHJpc2UifQ.OuXQuUrH0T9CucKUwTyDJE7E1yXACVyQeiSjwxqm22Y")
 				return req
 			}(),
 
 			App: func() *mapp.App {
 				app := new(mapp.App)
-				app.On("SetConfiguration",
+				app.On("SetReportedConfiguration",
 					contextMatcher,
 					mock.AnythingOfType("uuid.UUID"),
 					model.Attributes{
@@ -86,30 +79,25 @@ func TestSetConfiguration(t *testing.T) {
 		},
 
 		{
-			Name: "error from SetConfiguration",
+			Name: "error from SetReportedConfiguration",
 
 			Request: func() *http.Request {
 				body, _ := json.Marshal(map[string]interface{}{
 					"key0": "value0",
 				})
 
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					bytes.NewReader(body),
 				)
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIuZGV2aWNlIjp0cnVlLCJtZW5kZXIucGxhbiI6ImVudGVycHJpc2UifQ.OuXQuUrH0T9CucKUwTyDJE7E1yXACVyQeiSjwxqm22Y")
 				return req
 			}(),
 
 			App: func() *mapp.App {
 				app := new(mapp.App)
-				app.On("SetConfiguration",
+				app.On("SetReportedConfiguration",
 					contextMatcher,
 					mock.AnythingOfType("uuid.UUID"),
 					model.Attributes{
@@ -137,13 +125,8 @@ func TestSetConfiguration(t *testing.T) {
 					},
 				})
 
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					bytes.NewReader(body),
 				)
 				req.Header.Set("Content-Type", "application/json")
@@ -170,13 +153,8 @@ func TestSetConfiguration(t *testing.T) {
 					},
 				})
 
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					bytes.NewReader(body),
 				)
 				req.Header.Set("Content-Type", "application/json")
@@ -189,85 +167,18 @@ func TestSetConfiguration(t *testing.T) {
 			}(),
 			Status: http.StatusUnauthorized,
 		},
-
-		{
-			Name: "error url not found",
-
-			Request: func() *http.Request {
-				body, _ := json.Marshal(map[string]interface{}{
-					"configured": []map[string]interface{}{
-						{
-							"key":   "key0",
-							"value": "value0",
-						},
-					},
-				})
-
-				repl := strings.NewReplacer(
-					":device_id", "",
-				)
-				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					bytes.NewReader(body),
-				)
-				req.Header.Set("Content-Type", "application/json")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				return app
-			}(),
-			Status: http.StatusNotFound,
-		},
-
-		{
-			Name: "error bad request not a valid device id",
-
-			Request: func() *http.Request {
-				body, _ := json.Marshal(map[string]interface{}{
-					"configured": []map[string]interface{}{
-						{
-							"key":   "key0",
-							"value": "value0",
-						},
-					},
-				})
-
-				repl := strings.NewReplacer(
-					":device_id", "id",
-				)
-				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					bytes.NewReader(body),
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				return app
-			}(),
-			Status: http.StatusBadRequest,
-		},
-
 		{
 			Name: "error bad request not a valid json in body",
 
 			Request: func() *http.Request {
 				body := []byte("not a valid json text")
 
-				repl := strings.NewReplacer(
-					":device_id", "id",
-				)
 				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					bytes.NewReader(body),
 				)
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIuZGV2aWNlIjp0cnVlLCJtZW5kZXIucGxhbiI6ImVudGVycHJpc2UifQ.OuXQuUrH0T9CucKUwTyDJE7E1yXACVyQeiSjwxqm22Y")
 				return req
 			}(),
 
@@ -276,6 +187,25 @@ func TestSetConfiguration(t *testing.T) {
 				return app
 			}(),
 			Status: http.StatusBadRequest,
+		},
+		{
+			Name: "error forbidden not a device",
+
+			Request: func() *http.Request {
+				req, _ := http.NewRequest("PUT",
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
+					nil,
+				)
+				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIudXNlciI6dHJ1ZSwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.ZeGSy7IaAAdKz7T71A3zml2VSObIAuJSLh3ypT6zd3U")
+				return req
+			}(),
+
+			App: func() *mapp.App {
+				app := new(mapp.App)
+				return app
+			}(),
+			Status: http.StatusForbidden,
 		},
 	}
 	for i := range testCases {
@@ -297,22 +227,12 @@ func TestSetConfiguration(t *testing.T) {
 	}
 }
 
-func TestGetConfiguration(t *testing.T) {
+func TestDevicesGetConfiguration(t *testing.T) {
 	t.Parallel()
 
 	device := model.Device{
 		ID: uuid.New(),
 		ConfiguredAttributes: []model.Attribute{
-			{
-				Key:   "key0",
-				Value: "value0",
-			},
-			{
-				Key:   "key2",
-				Value: "value2",
-			},
-		},
-		ReportedAttributes: []model.Attribute{
 			{
 				Key:   "key1",
 				Value: "value1",
@@ -320,6 +240,16 @@ func TestGetConfiguration(t *testing.T) {
 			{
 				Key:   "key3",
 				Value: "value3",
+			},
+		},
+		ReportedAttributes: []model.Attribute{
+			{
+				Key:   "key0",
+				Value: "value0",
+			},
+			{
+				Key:   "key2",
+				Value: "value2",
 			},
 		},
 		UpdatedTS: time.Now(),
@@ -340,17 +270,12 @@ func TestGetConfiguration(t *testing.T) {
 			Name: "ok",
 
 			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					nil,
 				)
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIuZGV2aWNlIjp0cnVlLCJtZW5kZXIucGxhbiI6ImVudGVycHJpc2UifQ.OuXQuUrH0T9CucKUwTyDJE7E1yXACVyQeiSjwxqm22Y")
 				return req
 			}(),
 
@@ -369,13 +294,8 @@ func TestGetConfiguration(t *testing.T) {
 			Name: "error no auth",
 
 			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					nil,
 				)
 				req.Header.Set("Content-Type", "application/json")
@@ -393,13 +313,8 @@ func TestGetConfiguration(t *testing.T) {
 			Name: "error bad token format",
 
 			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					nil,
 				)
 				req.Header.Set("Content-Type", "application/json")
@@ -414,18 +329,15 @@ func TestGetConfiguration(t *testing.T) {
 		},
 
 		{
-			Name: "error url not found",
+			Name: "error forbidden not a device",
 
 			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", "",
-				)
 				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					nil,
 				)
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIudXNlciI6dHJ1ZSwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.ZeGSy7IaAAdKz7T71A3zml2VSObIAuJSLh3ypT6zd3U")
 				return req
 			}(),
 
@@ -433,76 +345,19 @@ func TestGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				return app
 			}(),
-			Status: http.StatusNotFound,
-		},
-
-		{
-			Name: "error bad request not a valid device id",
-
-			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", "id",
-				)
-				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					nil,
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				return app
-			}(),
-			Status: http.StatusBadRequest,
-		},
-
-		{
-			Name: "error device not found",
-
-			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					nil,
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("GetDevice",
-					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
-				).Return(device, store.ErrDeviceNoExist)
-				return app
-			}(),
-			Status: http.StatusNotFound,
+			Status: http.StatusForbidden,
 		},
 
 		{
 			Name: "error internal error on GetDevice",
 
 			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
 				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
+					"http://localhost"+URIDevices+URIDeviceConfiguration,
 					nil,
 				)
 				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZWQxNGQ1NS1kOTk2LTQyY2QtODI0OC1lODA2NjYzODEwYTgiLCJtZW5kZXIuZGV2aWNlIjp0cnVlLCJtZW5kZXIucGxhbiI6ImVudGVycHJpc2UifQ.OuXQuUrH0T9CucKUwTyDJE7E1yXACVyQeiSjwxqm22Y")
 				return req
 			}(),
 
@@ -532,7 +387,7 @@ func TestGetConfiguration(t *testing.T) {
 				var d map[string]interface{}
 				json.Unmarshal(w.Body.Bytes(), &d)
 				t.Logf("got: %+v", d)
-				assert.Equal(t, d["configured"], attributes2Map(device.ConfiguredAttributes))
+				assert.Equal(t, d, attributes2Map(device.ConfiguredAttributes))
 			}
 			if tc.Error != nil {
 				b, _ := json.Marshal(tc.Error)
@@ -540,16 +395,4 @@ func TestGetConfiguration(t *testing.T) {
 			}
 		})
 	}
-}
-
-func attributes2Map(attributes []model.Attribute) map[string]interface{} {
-	configurationMap := make(map[string]interface{}, len(attributes))
-	for _, a := range attributes {
-		switch a.Value.(type) {
-		case string:
-			configurationMap[a.Key] = a.Value.(string)
-		}
-	}
-
-	return configurationMap
 }

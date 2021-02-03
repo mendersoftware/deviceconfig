@@ -17,7 +17,7 @@ package model
 import (
 	"time"
 
-	"github.com/go-ozzo/ozzo-validation/v4"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -26,10 +26,10 @@ type Device struct {
 	// ID is the device id assigned by deviceauth
 	ID uuid.UUID `bson:"_id" json:"id"`
 
-	// DesiredAttributes is the configured attributes for the device.
-	DesiredAttributes Attributes `bson:"configured,omitempty" json:"configured"`
-	// CurrentAttributes is the configuration reported by the device.
-	CurrentAttributes Attributes `bson:"reported,omitempty" json:"reported"`
+	// ConfiguredAttributes are the configured attributes for the device.
+	ConfiguredAttributes Attributes `bson:"configured,omitempty" json:"configured"`
+	// ReportedAttributes are the configuration reported by the device.
+	ReportedAttributes Attributes `bson:"reported,omitempty" json:"reported"`
 
 	// UpdatedTS holds the timestamp for when the desired state changed,
 	// including when the object was created.
@@ -41,9 +41,8 @@ type Device struct {
 func (dev Device) Validate() error {
 	err := validation.ValidateStruct(&dev,
 		validation.Field(&dev.ID, uuidNotEmpty),
-		validation.Field(&dev.DesiredAttributes),
-		validation.Field(&dev.CurrentAttributes),
-		validation.Field(&dev.UpdatedTS, validation.Required),
+		validation.Field(&dev.ConfiguredAttributes, validateAttributes),
+		validation.Field(&dev.ReportedAttributes, validateAttributes),
 	)
 	return errors.Wrap(err, "invalid device object")
 }
