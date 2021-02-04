@@ -20,6 +20,9 @@ deviceconfig
 .idea
 *.go.skip
 
+# Python virtualenv
+venv/
+
 # Python generated files
 **/__pycache__
 **/*.pyc
