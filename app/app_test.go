@@ -24,8 +24,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/mendersoftware/deviceconfig/client/workflows"
+	mworkflows "github.com/mendersoftware/deviceconfig/client/workflows/mocks"
 	"github.com/mendersoftware/deviceconfig/model"
 	mstore "github.com/mendersoftware/deviceconfig/store/mocks"
+	"github.com/mendersoftware/go-lib-micro/identity"
 )
 
 func TestHealthCheck(t *testing.T) {
@@ -39,7 +42,7 @@ func TestHealthCheck(t *testing.T) {
 		}),
 	).Return(err)
 
-	app := New(store, Config{})
+	app := New(store, nil, Config{})
 
 	ctx := context.Background()
 	res := app.HealthCheck(ctx)
@@ -65,7 +68,7 @@ func TestProvisionDevice(t *testing.T) {
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
 
-	app := New(ds, Config{})
+	app := New(ds, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 }
@@ -91,7 +94,7 @@ func TestGetDevice(t *testing.T) {
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
-	app := New(ds, Config{})
+	app := New(ds, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
@@ -110,7 +113,7 @@ func TestDecommissionDevice(t *testing.T) {
 	defer ds.AssertExpectations(t)
 	ds.On("DeleteDevice", ctx, devID).Return(nil)
 
-	app := New(ds, Config{})
+	app := New(ds, nil, Config{})
 	err := app.DecommissionDevice(ctx, devID)
 	assert.NoError(t, err)
 }
@@ -149,7 +152,7 @@ func TestSetConfiguration(t *testing.T) {
 	ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
-	app := New(ds, Config{})
+	app := New(ds, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
@@ -181,6 +184,90 @@ func TestSetConfiguration(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
+}
+
+func TestSetConfigurationWithAuditLogs(t *testing.T) {
+	const userID = "user-id"
+
+	testCases := map[string]struct {
+		err error
+	}{
+		"ok": {
+			err: nil,
+		},
+		"error": {
+			err: errors.New("workflows error"),
+		},
+	}
+
+	t.Parallel()
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.TODO()
+			ctx = identity.WithContext(ctx, &identity.Identity{
+				Subject: userID,
+				IsUser:  true,
+			})
+
+			dev := model.NewDevice{
+				ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			}
+			configuration := []model.Attribute{
+				{
+					Key:   "hostname",
+					Value: "some0",
+				},
+			}
+
+			deviceMatcher := mock.MatchedBy(func(d model.Device) bool {
+				if !assert.Equal(t, dev.ID, d.ID) {
+					return false
+				}
+				return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+			})
+
+			ds := new(mstore.DataStore)
+			defer ds.AssertExpectations(t)
+			ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
+			ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
+
+			wflows := &mworkflows.Client{}
+			defer wflows.AssertExpectations(t)
+			wflows.On("SubmitAuditLog",
+				mock.MatchedBy(func(ctx context.Context) bool {
+					return true
+				}),
+				mock.MatchedBy(func(log workflows.AuditLog) bool {
+					assert.Equal(t, workflows.ActionSetConfiguration, log.Action)
+					assert.Equal(t, workflows.Actor{
+						ID:   userID,
+						Type: workflows.ActorUser,
+					}, log.Actor)
+					assert.Equal(t, workflows.Object{
+						ID:   dev.ID.String(),
+						Type: workflows.ObjectDevice,
+					}, log.Object)
+					assert.Equal(t, "{\"hostname\":\"some0\"}", log.Change)
+					assert.WithinDuration(t, time.Now(), log.EventTS, time.Minute)
+
+					return true
+				}),
+			).Return(tc.err)
+
+			app := New(ds, wflows, Config{HaveAuditLogs: true})
+			err := app.ProvisionDevice(ctx, dev)
+			assert.NoError(t, err)
+
+			err = app.SetConfiguration(ctx, dev.ID, configuration)
+			if tc.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.err.Error())
+			}
+		})
+	}
 }
 
 func TestSetReportedConfiguration(t *testing.T) {
@@ -223,7 +310,7 @@ func TestSetReportedConfiguration(t *testing.T) {
 	ds.On("UpsertReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
-	app := New(ds, Config{})
+	app := New(ds, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
