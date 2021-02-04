@@ -51,6 +51,32 @@ func TestHealthCheck(t *testing.T) {
 	store.AssertExpectations(t)
 }
 
+func TestProvisionTenant(t *testing.T) {
+	t.Parallel()
+	ctx := context.TODO()
+
+	const tenantID = "dummy"
+	tenant := model.NewTenant{
+		TenantID: tenantID,
+	}
+
+	ds := new(mstore.DataStore)
+	ds.On("MigrateLatest",
+		mock.MatchedBy(func(ctx context.Context) bool {
+			id := identity.FromContext(ctx)
+			assert.NotNil(t, id)
+			assert.Equal(t, id.Tenant, tenantID)
+			return true
+		}),
+	).Return(nil)
+
+	defer ds.AssertExpectations(t)
+
+	app := New(ds, nil, Config{})
+	err := app.ProvisionTenant(ctx, tenant)
+	assert.NoError(t, err)
+}
+
 func TestProvisionDevice(t *testing.T) {
 	t.Parallel()
 	ctx := context.TODO()
