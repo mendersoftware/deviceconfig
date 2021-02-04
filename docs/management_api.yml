@@ -33,7 +33,7 @@ paths:
       operationId: Get Device Configuration
       tags:
         - ManagementAPI
-      summary: Query the configuration store; retrieve all key-value pairs
+      summary: Get the device's configuration
       parameters:
         - in: path
           name: deviceId
@@ -44,7 +44,7 @@ paths:
           description: ID of the device to query.
       responses:
         200:
-          description: OK
+          description: Success
           content:
             application/json:
               schema:
@@ -87,7 +87,7 @@ paths:
       operationId: Set Device Configuration
       tags:
         - ManagementAPI
-      summary: Set a key-value pair store, updating if existing, removing if empty
+      summary: Set the device's configuration
       requestBody:
         content:
           application/json:
@@ -102,9 +102,53 @@ paths:
           description: ID of the device to query.
       responses:
         204:
-          description: Created
+          description: Success
         400:
           description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /configurations/device/{deviceId}/deploy:
+    post:
+      operationId: Deploy Device Configuration
+      tags:
+        - ManagementAPI
+      summary: Deploy the device's configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewConfigurationDeployment'
+      parameters:
+        - in: path
+          name: deviceId
+          schema:
+            type: string
+          required: true
+          description: ID of the device.
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewConfigurationDeploymentResponse'
+        400:
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Not Found.
           content:
             application/json:
               schema:
@@ -132,6 +176,21 @@ components:
       type: object
       additionalProperties:
         type: string
+
+    NewConfigurationDeployment:
+      type: object
+      properties:
+        retries:
+          type: integer
+          description: The number of times a device can retry the deployment in case of failure, defaults to 0
+          default: 0
+
+    NewConfigurationDeploymentResponse:
+      type: object
+      properties:
+        deployment_id:
+          type: string
+          description: Deployment ID
 
     Error:
       type: object
