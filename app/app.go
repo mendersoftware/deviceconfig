@@ -21,9 +21,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
+	"github.com/mendersoftware/go-lib-micro/identity"
+
+	"github.com/mendersoftware/deviceconfig/client/workflows"
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
-	"github.com/mendersoftware/go-lib-micro/identity"
 )
 
 // App errors
@@ -46,11 +48,13 @@ type App interface {
 	SetConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
 	SetReportedConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
 	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
+	DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
 }
 
 // app is an app object
 type app struct {
-	store store.DataStore
+	store     store.DataStore
+	workflows workflows.Client
 	Config
 }
 
@@ -59,7 +63,7 @@ type Config struct {
 }
 
 // NewApp initialize a new deviceconfig App
-func New(ds store.DataStore, config ...Config) App {
+func New(ds store.DataStore, wf workflows.Client, config ...Config) App {
 	conf := Config{}
 	for _, cfgIn := range config {
 		if cfgIn.HaveAuditLogs {
@@ -67,8 +71,9 @@ func New(ds store.DataStore, config ...Config) App {
 		}
 	}
 	return &app{
-		store:  ds,
-		Config: conf,
+		store:     ds,
+		workflows: wf,
+		Config:    conf,
 	}
 }
 
@@ -98,11 +103,41 @@ func (a *app) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
 func (a *app) SetConfiguration(ctx context.Context,
 	devID uuid.UUID,
 	configuration model.Attributes) error {
-	return a.store.UpsertConfiguration(ctx, model.Device{
+	err := a.store.UpsertConfiguration(ctx, model.Device{
 		ID:                   devID,
 		ConfiguredAttributes: configuration,
 		UpdatedTS:            time.Now(),
 	})
+	if err != nil {
+		return err
+	}
+	if identity := identity.FromContext(ctx); identity != nil &&
+		identity.IsUser && a.HaveAuditLogs {
+		userID := identity.Subject
+		configuration, err := configuration.MarshalJSON()
+		if err == nil {
+			err = a.workflows.SubmitAuditLog(ctx, workflows.AuditLog{
+				Action: workflows.ActionSetConfiguration,
+				Actor: workflows.Actor{
+					ID:   userID,
+					Type: workflows.ActorUser,
+				},
+				Object: workflows.Object{
+					ID:   devID.String(),
+					Type: workflows.ObjectDevice,
+				},
+				Change:  string(configuration),
+				EventTS: time.Now(),
+			})
+		}
+		if err != nil {
+			return errors.Wrap(err,
+				"failed to submit audit log for setting the device configuration",
+			)
+		}
+	}
+
+	return nil
 }
 
 func (a *app) SetReportedConfiguration(ctx context.Context,
@@ -117,4 +152,45 @@ func (a *app) SetReportedConfiguration(ctx context.Context,
 
 func (a *app) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
 	return a.store.GetDevice(ctx, devID)
+}
+
+func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
+	request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error) {
+	response := model.DeployConfigurationResponse{}
+	configuration, err := device.ConfiguredAttributes.MarshalJSON()
+	if err != nil {
+		return response, err
+	}
+	identity := identity.FromContext(ctx)
+	if identity == nil || !identity.IsUser {
+		return response, errors.New("identity missing from the context")
+	}
+	response.DeploymentID = uuid.New()
+	err = a.workflows.DeployConfiguration(ctx, identity.Tenant, device.ID,
+		response.DeploymentID, configuration, request.Retries)
+	if err != nil {
+		return response, err
+	}
+	if a.HaveAuditLogs {
+		userID := identity.Subject
+		err = a.workflows.SubmitAuditLog(ctx, workflows.AuditLog{
+			Action: workflows.ActionDeployConfiguration,
+			Actor: workflows.Actor{
+				ID:   userID,
+				Type: workflows.ActorUser,
+			},
+			Object: workflows.Object{
+				ID:   device.ID.String(),
+				Type: workflows.ObjectDevice,
+			},
+			Change:  string(configuration),
+			EventTS: time.Now(),
+		})
+		if err != nil {
+			return response, errors.Wrap(err,
+				"failed to submit audit log for deploying the device configuration",
+			)
+		}
+	}
+	return response, nil
 }

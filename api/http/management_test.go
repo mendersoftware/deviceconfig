@@ -542,6 +542,169 @@ func TestGetConfiguration(t *testing.T) {
 	}
 }
 
+func TestDeployConfiguration(t *testing.T) {
+	t.Parallel()
+
+	deviceID := uuid.New()
+
+	testCases := map[string]struct {
+		deviceID               string
+		device                 model.Device
+		requestBody            string
+		getDeviceErr           error
+		deployConfiguration    model.DeployConfigurationResponse
+		deployConfigurationErr error
+		status                 int
+	}{
+		"ok": {
+			deviceID: deviceID.String(),
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: time.Now(),
+				ReportTS:  time.Now(),
+			},
+			requestBody: "{\"retries\": 0}",
+			deployConfiguration: model.DeployConfigurationResponse{
+				DeploymentID: uuid.New(),
+			},
+			status: 200,
+		},
+		"ko, error in DeployConfiguration": {
+			deviceID: deviceID.String(),
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: time.Now(),
+				ReportTS:  time.Now(),
+			},
+			requestBody:            "{\"retries\": 0}",
+			deployConfigurationErr: errors.New("generic error"),
+			status:                 500,
+		},
+		"ko, device ID not valid": {
+			deviceID: "dummy",
+			status:   400,
+		},
+		"ko, device not found": {
+			deviceID:     deviceID.String(),
+			getDeviceErr: store.ErrDeviceNoExist,
+			status:       404,
+		},
+		"ko, error in GetDevice": {
+			deviceID:     deviceID.String(),
+			requestBody:  "",
+			getDeviceErr: errors.New("generic error"),
+			status:       500,
+		},
+		"ko, bad request body": {
+			deviceID:    deviceID.String(),
+			requestBody: "",
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: time.Now(),
+				ReportTS:  time.Now(),
+			},
+			status: 400,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			app := new(mapp.App)
+			defer app.AssertExpectations(t)
+			if tc.device.ID != uuid.Nil || tc.getDeviceErr != nil {
+				app.On("GetDevice",
+					contextMatcher,
+					mock.AnythingOfType("uuid.UUID"),
+				).Return(tc.device, tc.getDeviceErr)
+			}
+
+			if tc.deployConfiguration.DeploymentID != uuid.Nil || tc.deployConfigurationErr != nil {
+				app.On("DeployConfiguration",
+					contextMatcher,
+					tc.device,
+					mock.AnythingOfType("model.DeployConfigurationRequest"),
+				).Return(tc.deployConfiguration, tc.deployConfigurationErr)
+			}
+
+			router := NewRouter(app)
+
+			repl := strings.NewReplacer(
+				":device_id", tc.deviceID,
+			)
+
+			req, _ := http.NewRequest("POST",
+				"http://localhost"+URIManagement+repl.Replace(URIDeployConfiguration),
+				bytes.NewReader([]byte(tc.requestBody)),
+			)
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			assert.Equal(t, tc.status, w.Code)
+		})
+	}
+}
+
 func attributes2Map(attributes []model.Attribute) map[string]interface{} {
 	configurationMap := make(map[string]interface{}, len(attributes))
 	for _, a := range attributes {

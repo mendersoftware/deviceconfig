@@ -55,6 +55,11 @@ const (
 	// SettingDebugLogDefault is the default value for the debug log enabling
 	SettingDebugLogDefault = false
 
+	// SettingWorkflowsURL sets the base URL for the workflows orchestrator.
+	SettingWorkflowsURL = "workflows_url"
+	// SettingWorkflowsURLDefault sets the default workflows URL.
+	SettingWorkflowsURLDefault = "http://mender-workflows:8080"
+
 	// SettingEnableAudit enables auditing of configuration events.
 	SettingEnableAudit        = "enable_audit"
 	SettingEnableAuditDefault = false
@@ -69,6 +74,7 @@ var (
 		{Key: SettingDbSSL, Value: SettingDbSSLDefault},
 		{Key: SettingDbSSLSkipVerify, Value: SettingDbSSLSkipVerifyDefault},
 		{Key: SettingDebugLog, Value: SettingDebugLogDefault},
+		{Key: SettingWorkflowsURL, Value: SettingWorkflowsURLDefault},
 		{Key: SettingEnableAudit, Value: SettingEnableAuditDefault},
 	}
 )

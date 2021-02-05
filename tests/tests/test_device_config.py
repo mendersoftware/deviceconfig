@@ -27,12 +27,12 @@ def device_id():
     device_id = str(uuid.uuid4())
     new_device = {"device_id": device_id}
     r = client.provision_device_with_http_info(
-        tenant_id="", new_device=new_device, _preload_content=False
+        tenant_id="tenant-id", new_device=new_device, _preload_content=False
     )
     assert r.status == 201
     yield device_id
     r = client.decommission_device_with_http_info(
-        tenant_id="", device_id=device_id, _preload_content=False
+        tenant_id="tenant-id", device_id=device_id, _preload_content=False
     )
     assert r.status == 204
 
@@ -40,8 +40,10 @@ def device_id():
 class TestDeviceConfig:
     def test_config_device_get(self, device_id):
         user_id = str(uuid.uuid4())
-        management_client = management_api_with_params(user_id=user_id)
-        client = devices_api_with_params(device_id=device_id)
+        management_client = management_api_with_params(
+            user_id=user_id, tenant_id="tenant-id"
+        )
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         #
         # set the initial configuration
         configuration = {
@@ -64,8 +66,10 @@ class TestDeviceConfig:
 
     def test_config_device_set_get_remove(self, device_id):
         user_id = str(uuid.uuid4())
-        management_client = management_api_with_params(user_id=user_id)
-        client = devices_api_with_params(device_id=device_id)
+        management_client = management_api_with_params(
+            user_id=user_id, tenant_id="tenant-id"
+        )
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         #
         # get the configuration (empty)
         r = management_client.get_device_configuration(device_id)
@@ -137,8 +141,10 @@ class TestDeviceConfig:
 
     def test_config_device_replace_key_with_empty_value(self, device_id):
         user_id = str(uuid.uuid4())
-        management_client = management_api_with_params(user_id=user_id)
-        client = devices_api_with_params(device_id=device_id)
+        management_client = management_api_with_params(
+            user_id=user_id, tenant_id="tenant-id"
+        )
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         #
         # get the configuration (empty)
         r = management_client.get_device_configuration(device_id)
@@ -189,7 +195,7 @@ class TestDeviceConfig:
         assert "reported_ts" in data.keys()
 
     def test_config_device_value_number(self, device_id):
-        client = devices_api_with_params(device_id=device_id)
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": 1234,
@@ -201,7 +207,7 @@ class TestDeviceConfig:
         assert excinfo.value.status == 400
 
     def test_config_device_value_none(self, device_id):
-        client = devices_api_with_params(device_id=device_id)
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": None,
@@ -213,7 +219,7 @@ class TestDeviceConfig:
         assert excinfo.value.status == 400
 
     def test_config_device_value_boolean(self, device_id):
-        client = devices_api_with_params(device_id=device_id)
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": False,
@@ -225,7 +231,7 @@ class TestDeviceConfig:
         assert excinfo.value.status == 400
 
     def test_config_device_value_dict(self, device_id):
-        client = devices_api_with_params(device_id=device_id)
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": {},
@@ -237,7 +243,7 @@ class TestDeviceConfig:
         assert excinfo.value.status == 400
 
     def test_config_device_value_list(self, device_id):
-        client = devices_api_with_params(device_id=device_id)
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": [],
@@ -249,7 +255,7 @@ class TestDeviceConfig:
         assert excinfo.value.status == 400
 
     def test_config_device_key_too_long(self, device_id):
-        client = devices_api_with_params(device_id=device_id)
+        client = devices_api_with_params(device_id=device_id, tenant_id="tenant-id")
         configuration = {
             "k" * 4097: "value",
         }

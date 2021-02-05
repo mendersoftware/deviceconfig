@@ -44,6 +44,29 @@ func (_m *App) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
 	return r0
 }
 
+// DeployConfiguration provides a mock function with given fields: ctx, device, request
+func (_m *App) DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error) {
+	ret := _m.Called(ctx, device, request)
+
+	var r0 model.DeployConfigurationResponse
+	if rf, ok := ret.Get(0).(func(context.Context, model.Device, model.DeployConfigurationRequest) model.DeployConfigurationResponse); ok {
+		r0 = rf(ctx, device, request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(model.DeployConfigurationResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, model.Device, model.DeployConfigurationRequest) error); ok {
+		r1 = rf(ctx, device, request)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetDevice provides a mock function with given fields: ctx, devID
 func (_m *App) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
 	ret := _m.Called(ctx, devID)

@@ -27,6 +27,7 @@ import (
 
 	api "github.com/mendersoftware/deviceconfig/api/http"
 	"github.com/mendersoftware/deviceconfig/app"
+	"github.com/mendersoftware/deviceconfig/client/workflows"
 	. "github.com/mendersoftware/deviceconfig/config"
 	"github.com/mendersoftware/deviceconfig/store"
 )
@@ -36,9 +37,11 @@ func InitAndRun(dataStore store.DataStore) error {
 	ctx := context.Background()
 
 	l := log.FromContext(ctx)
-
+	wflows := workflows.NewClient(
+		config.Config.GetString(SettingWorkflowsURL),
+	)
 	appl := app.New(
-		dataStore, app.Config{
+		dataStore, wflows, app.Config{
 			HaveAuditLogs: config.Config.GetBool(SettingEnableAudit),
 		},
 	)
