@@ -26,12 +26,12 @@ def device_id():
     device_id = str(uuid.uuid4())
     new_device = {"device_id": device_id}
     r = client.provision_device_with_http_info(
-        tenant_id="", new_device=new_device, _preload_content=False
+        tenant_id="tenant-id", new_device=new_device, _preload_content=False
     )
     assert r.status == 201
     yield device_id
     r = client.decommission_device_with_http_info(
-        tenant_id="", device_id=device_id, _preload_content=False
+        tenant_id="tenant-id", device_id=device_id, _preload_content=False
     )
     assert r.status == 204
 
@@ -39,7 +39,7 @@ def device_id():
 class TestManagementConfig:
     def test_config_device_set_get_remove(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         #
         # get the configuration (empty)
         r = client.get_device_configuration(device_id)
@@ -111,7 +111,7 @@ class TestManagementConfig:
 
     def test_config_device_replace_key_with_empty_value(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         #
         # get the configuration (empty)
         r = client.get_device_configuration(device_id)
@@ -163,7 +163,7 @@ class TestManagementConfig:
 
     def test_config_device_value_number(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": 1234,
@@ -176,7 +176,7 @@ class TestManagementConfig:
 
     def test_config_device_value_none(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": None,
@@ -189,7 +189,7 @@ class TestManagementConfig:
 
     def test_config_device_value_boolean(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": False,
@@ -202,7 +202,7 @@ class TestManagementConfig:
 
     def test_config_device_value_dict(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": {},
@@ -215,7 +215,7 @@ class TestManagementConfig:
 
     def test_config_device_value_list(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         configuration = {
             "key": "value",
             "another-key": [],
@@ -228,7 +228,7 @@ class TestManagementConfig:
 
     def test_config_device_key_too_long(self, device_id):
         user_id = str(uuid.uuid4())
-        client = management_api_with_params(user_id=user_id)
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
         configuration = {
             "k" * 4097: "value",
         }
@@ -237,3 +237,28 @@ class TestManagementConfig:
                 device_id, request_body=configuration, _preload_content=False
             )
         assert excinfo.value.status == 400
+
+    def test_config_device_deploy(self, device_id):
+        user_id = str(uuid.uuid4())
+        client = management_api_with_params(user_id=user_id, tenant_id="tenant-id")
+        #
+        # set the initial configuration
+        configuration = {
+            "key": "value",
+            "another-key": "another-value",
+            "dollar-key": "$",
+        }
+        r = client.set_device_configuration(
+            device_id, request_body=configuration, _preload_content=False
+        )
+        assert r.status == 204
+        #
+        # deploy the configuration
+        request = {
+            "retries": 1,
+        }
+        r = client.deploy_device_configuration(
+            device_id, new_configuration_deployment=request, _preload_content=False
+        )
+        assert r.status == 200
+        assert "deployment_id" in str(r.data)

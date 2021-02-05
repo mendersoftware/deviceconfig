@@ -17,6 +17,7 @@ import json
 import os
 import uuid
 import pytest
+import requests
 import signal
 
 import bson
@@ -25,6 +26,9 @@ import pymongo
 import devices_api
 import internal_api
 import management_api
+
+
+MMOCK_URI = "http://mmock:8082"
 
 
 def pytest_addoption(parser):
@@ -103,3 +107,10 @@ def timeout(request, timeout_sec=30):
     signal.alarm(timeout_sec)
     yield
     signal.signal(signal.SIGALRM, alrm_handler)
+
+
+@pytest.fixture(scope="function")
+def mmock_url():
+    res = requests.get(MMOCK_URI + "/api/request/reset")
+    assert res.status_code == 200
+    yield MMOCK_URI
