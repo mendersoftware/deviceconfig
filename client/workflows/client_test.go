@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/requestid"
 	"github.com/mendersoftware/go-lib-micro/rest_utils"
@@ -412,6 +413,199 @@ func TestSubmitAuditLog(t *testing.T) {
 				if assert.NotNil(t, id) {
 					assert.Equal(t, id.Tenant, wflow.TenantID)
 				}
+			}
+		})
+	}
+}
+
+func TestDeployConfiguration(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		Name string
+
+		CTX           context.Context
+		tenantID      string
+		deviceID      uuid.UUID
+		deploymentID  uuid.UUID
+		configuration []byte
+		retries       uint
+
+		URLNoise string // Sole purpose is to provide a bad URL
+
+		Response *http.Response
+		Error    error
+	}{{
+		Name: "ok",
+
+		CTX: requestid.WithContext(
+			identity.WithContext(
+				context.Background(),
+				&identity.Identity{
+					Tenant: "testing-mender-io",
+				},
+			),
+			"testing"),
+
+		tenantID:      "tenantID",
+		deviceID:      uuid.New(),
+		deploymentID:  uuid.New(),
+		configuration: []byte("{\"key\":\"value\"}"),
+		retries:       1,
+
+		Response: &http.Response{
+			StatusCode: 201,
+		},
+	}, {
+		Name: "error, bad request URL",
+
+		CTX: requestid.WithContext(
+			identity.WithContext(
+				context.Background(),
+				&identity.Identity{
+					Tenant: "testing-mender-io",
+				},
+			),
+			"testing"),
+
+		tenantID:      "tenantID",
+		deviceID:      uuid.New(),
+		deploymentID:  uuid.New(),
+		configuration: []byte("{\"key\":\"value\"}"),
+		retries:       1,
+
+		URLNoise: "?####$%%%%",
+		Error: errors.New(`^workflows: error preparing HTTP request: ` +
+			`parse ".+": invalid URL escape "%%%"$`),
+	}, {
+		Name: "error, context canceled",
+
+		CTX: func() context.Context {
+			ctx := requestid.WithContext(
+				identity.WithContext(
+					context.Background(),
+					&identity.Identity{
+						Tenant: "testing-mender-io",
+					},
+				), "testing",
+			)
+			ctx, cancel := context.WithCancel(ctx)
+			cancel()
+			return ctx
+		}(),
+
+		tenantID:      "tenantID",
+		deviceID:      uuid.New(),
+		deploymentID:  uuid.New(),
+		configuration: []byte("{\"key\":\"value\"}"),
+		retries:       1,
+
+		Error: errors.Errorf(`workflows: failed to deploy configuration: `+
+			`Post ".+?%s": %s`, DeployDeviceConfigurationRI,
+			context.Canceled.Error(),
+		),
+		Response: &http.Response{
+			StatusCode: 201,
+		},
+	}, {
+		Name: "error, deploy_device_configuration does not exist",
+
+		CTX: requestid.WithContext(
+			identity.WithContext(
+				context.Background(),
+				&identity.Identity{
+					Tenant: "testing-mender-io",
+				},
+			), "testing",
+		),
+
+		tenantID:      "tenantID",
+		deviceID:      uuid.New(),
+		deploymentID:  uuid.New(),
+		configuration: []byte("{\"key\":\"value\"}"),
+		retries:       1,
+
+		Error: errors.New(`^workflows: workflow "deploy_device_configuration" not defined$`),
+		Response: &http.Response{
+			StatusCode: 404,
+		},
+	}, {
+		Name: "error, unexpected response",
+
+		CTX: requestid.WithContext(
+			identity.WithContext(
+				context.Background(),
+				&identity.Identity{
+					Tenant: "testing-mender-io",
+				},
+			), "testing",
+		),
+
+		tenantID:      "tenantID",
+		deviceID:      uuid.New(),
+		deploymentID:  uuid.New(),
+		configuration: []byte("{\"key\":\"value\"}"),
+		retries:       1,
+
+		Error: errors.Errorf(`^workflows: unexpected HTTP status from `+
+			`workflows service: %d`, http.StatusInternalServerError),
+		Response: &http.Response{
+			StatusCode: 500,
+		},
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			rspChan := make(chan *http.Response, 1)
+			reqChan := make(chan *http.Request, 1)
+			srv := newTestServer(rspChan, reqChan)
+			c := NewClient(srv.URL+tc.URLNoise, ClientOptions{
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
+			})
+			if tc.Response != nil {
+				select {
+				case rspChan <- tc.Response:
+				default:
+					panic("[PROG ERR] Test case error (race)!")
+				}
+			}
+
+			err := c.DeployConfiguration(tc.CTX, tc.tenantID, tc.deviceID, tc.deploymentID, tc.configuration, tc.retries)
+
+			if tc.Error != nil {
+				if assert.Error(t, err) {
+					assert.Regexp(t,
+						tc.Error.Error(),
+						err.Error(),
+					)
+				}
+			} else {
+				assert.NoError(t, err)
+				var (
+					req   *http.Request
+					wflow DeployConfigurationWorkflow
+				)
+				select {
+				case req = <-reqChan:
+
+				default:
+					panic("[PROG ERR] bad test case!")
+				}
+				if !assert.NotNil(t, req.Body) {
+					return
+				}
+				defer req.Body.Close()
+				decoder := json.NewDecoder(req.Body)
+				err := decoder.Decode(&wflow)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Equal(t, tc.tenantID, wflow.TenantID)
+				assert.Equal(t, tc.deviceID, wflow.DeviceID)
+				assert.Equal(t, tc.deploymentID, wflow.DeploymentID)
+				assert.Equal(t, string(tc.configuration), wflow.Configuration)
+				assert.Equal(t, tc.retries, wflow.Retries)
 			}
 		})
 	}

@@ -370,6 +370,88 @@ func TestSetReportedConfiguration(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestDeployConfiguration(t *testing.T) {
+	t.Parallel()
+
+	const userID = "user-id"
+
+	testCases := map[string]struct {
+		device  model.Device
+		request model.DeployConfigurationRequest
+		err     error
+		wfErr   error
+	}{
+		"ok": {},
+		"ko, deploy error": {
+			err: errors.New("error"),
+		},
+		"ko, wfErr": {
+			wfErr: errors.New("workflow error"),
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = identity.WithContext(ctx, &identity.Identity{
+				Tenant:  "tenantID",
+				IsUser:  true,
+				Subject: userID,
+			})
+
+			ds := new(mstore.DataStore)
+			defer ds.AssertExpectations(t)
+
+			wflows := &mworkflows.Client{}
+			defer wflows.AssertExpectations(t)
+
+			configuration, _ := tc.device.ConfiguredAttributes.MarshalJSON()
+			wflows.On("DeployConfiguration",
+				mock.MatchedBy(func(ctx context.Context) bool {
+					return true
+				}),
+				"tenantID",
+				tc.device.ID,
+				mock.AnythingOfType("uuid.UUID"),
+				configuration,
+				tc.request.Retries,
+			).Return(tc.err)
+
+			if tc.err == nil || tc.wfErr != nil {
+				wflows.On("SubmitAuditLog",
+					mock.MatchedBy(func(ctx context.Context) bool {
+						return true
+					}),
+					mock.MatchedBy(func(log workflows.AuditLog) bool {
+						assert.Equal(t, workflows.ActionDeployConfiguration, log.Action)
+						assert.Equal(t, workflows.Actor{
+							ID:   userID,
+							Type: workflows.ActorUser,
+						}, log.Actor)
+						assert.Equal(t, workflows.Object{
+							ID:   tc.device.ID.String(),
+							Type: workflows.ObjectDevice,
+						}, log.Object)
+						assert.Equal(t, string(configuration), log.Change)
+						assert.WithinDuration(t, time.Now(), log.EventTS, time.Minute)
+
+						return true
+					}),
+				).Return(tc.wfErr)
+			}
+
+			app := New(ds, wflows, Config{HaveAuditLogs: true})
+			_, err := app.DeployConfiguration(ctx, tc.device, tc.request)
+			if tc.err != nil {
+				assert.Error(t, err, tc.err)
+			} else if tc.wfErr != nil {
+				assert.Error(t, err, tc.wfErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func map2Attributes(configurationMap map[string]interface{}) model.Attributes {
 	attributes := make(model.Attributes, len(configurationMap))
 	i := 0

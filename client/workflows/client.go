@@ -1,4 +1,4 @@
-// Copyright 2020 Northern.tech AS
+// Copyright 2021 Northern.tech AS
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/requestid"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
@@ -29,9 +30,9 @@ import (
 )
 
 const (
-	HealthCheckURI = "/api/v1/health"
-	ResetEmailURI  = "/api/v1/workflow/send_password_reset_email"
-	AuditlogsURI   = "/api/v1/workflow/emit_auditlog"
+	HealthCheckURI              = "/api/v1/health"
+	AuditlogsURI                = "/api/v1/workflow/emit_auditlog"
+	DeployDeviceConfigurationRI = "/api/v1/workflow/deploy_device_configuration"
 )
 
 const (
@@ -43,6 +44,8 @@ const (
 type Client interface {
 	CheckHealth(ctx context.Context) error
 	SubmitAuditLog(ctx context.Context, log AuditLog) error
+	DeployConfiguration(ctx context.Context, tenantID string, deviceID uuid.UUID,
+		deploymentID uuid.UUID, configuration []byte, retries uint) error
 }
 
 type ClientOptions struct {
@@ -137,6 +140,7 @@ func (c *client) SubmitAuditLog(ctx context.Context, log AuditLog) error {
 		return errors.Wrap(err, "workflows: error preparing HTTP request")
 	}
 
+	req.Header.Add("Content-Type", "application/json")
 	rsp, err := c.client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "workflows: failed to submit auditlog")
@@ -149,6 +153,54 @@ func (c *client) SubmitAuditLog(ctx context.Context, log AuditLog) error {
 
 	if rsp.StatusCode == http.StatusNotFound {
 		return errors.New(`workflows: workflow "auditlogs" not defined`)
+	}
+
+	return errors.Errorf(
+		"workflows: unexpected HTTP status from workflows service: %s",
+		rsp.Status,
+	)
+}
+
+func (c *client) DeployConfiguration(ctx context.Context, tenantID string, deviceID uuid.UUID,
+	deploymentID uuid.UUID, configuration []byte, retries uint) error {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
+		defer cancel()
+	}
+
+	wflow := DeployConfigurationWorkflow{
+		RequestID:     requestid.FromContext(ctx),
+		TenantID:      tenantID,
+		DeviceID:      deviceID,
+		DeploymentID:  deploymentID,
+		Configuration: string(configuration),
+		Retries:       retries,
+	}
+
+	payload, _ := json.Marshal(wflow)
+	req, err := http.NewRequestWithContext(ctx,
+		"POST",
+		c.url+DeployDeviceConfigurationRI,
+		bytes.NewReader(payload),
+	)
+	if err != nil {
+		return errors.Wrap(err, "workflows: error preparing HTTP request")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	rsp, err := c.client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "workflows: failed to deploy configuration")
+	}
+	defer rsp.Body.Close()
+
+	if rsp.StatusCode < 300 {
+		return nil
+	}
+
+	if rsp.StatusCode == http.StatusNotFound {
+		return errors.New(`workflows: workflow "deploy_device_configuration" not defined`)
 	}
 
 	return errors.Errorf(

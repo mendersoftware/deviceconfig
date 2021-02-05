@@ -39,6 +39,7 @@ const (
 	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
 
 	URIConfiguration       = "/configurations/device/:device_id"
+	URIDeployConfiguration = "/configurations/device/:device_id/deploy"
 	URIDeviceConfiguration = "/configuration"
 
 	URIAlive  = "/alive"
@@ -79,6 +80,7 @@ func NewRouter(app app.App) http.Handler {
 	mgmtGrp.Use(identity.Middleware())
 	mgmtGrp.GET(URIConfiguration, mgmtAPI.GetConfiguration)
 	mgmtGrp.PUT(URIConfiguration, mgmtAPI.SetConfiguration)
+	mgmtGrp.POST(URIDeployConfiguration, mgmtAPI.DeployConfiguration)
 
 	// cors middleware for checking origin headers.
 	mgmtGrp.Use(cors.New(cors.Config{

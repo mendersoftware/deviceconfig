@@ -19,6 +19,7 @@ import (
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/google/uuid"
 )
 
 type AuditWorkflow struct {
@@ -30,7 +31,8 @@ type AuditWorkflow struct {
 type Action string
 
 const (
-	ActionSetConfiguration Action = "set_configuration"
+	ActionSetConfiguration    Action = "set_configuration"
+	ActionDeployConfiguration Action = "deploy_configuration"
 )
 
 type ActorType string
@@ -102,8 +104,18 @@ func (l AuditLog) Validate() error {
 		validation.Field(&l.Actor, validation.Required),
 		validation.Field(&l.Action, validation.In(
 			ActionSetConfiguration,
+			ActionDeployConfiguration,
 		), validation.Required),
 		validation.Field(&l.Object, validation.Required),
 		validation.Field(&l.EventTS, validation.Required),
 	)
+}
+
+type DeployConfigurationWorkflow struct {
+	RequestID     string    `json:"request_id"`
+	TenantID      string    `json:"tenant_id"`
+	DeviceID      uuid.UUID `json:"device_id"`
+	DeploymentID  uuid.UUID `json:"deployment_id"`
+	Configuration string    `json:"configuration"`
+	Retries       uint      `json:"retries"`
 }
