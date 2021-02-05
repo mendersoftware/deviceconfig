@@ -39,9 +39,9 @@ mongo_username: ""
 mongo_password: ""
 
 ## workflows service URL
-## Defaults to: "http://mender-workflows:8080"
+## Defaults to: "http://mender-workflows-server:8080"
 ## Overwrite with environment variable DEVICECONFIG_WORKFLOWS_URL
-workflows_url: http://mender-workflows:8080
+workflows_url: http://mender-workflows-server:8080
 
 # Enable audit logging
 # Defaults to: false (disabled)
