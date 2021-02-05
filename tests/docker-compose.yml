@@ -19,7 +19,7 @@ services:
       image: mendersoftware/deviceconfig:prtest
       environment:
         DEVICECONFIG_ENABLE_AUDIT: "true"
-        DEVICECONFIG_WORKFLOWS_URL: "http://mender-workflows:8080"
+        DEVICECONFIG_WORKFLOWS_URL: "http://mender-workflows-server:8080"
       networks:
         mender:
           aliases:
@@ -40,7 +40,7 @@ services:
         mender:
           aliases:
             - mmock
-            - mender-workflows
+            - mender-workflows-server
 
     mender-mongo:
       image: "mongo:4.4"

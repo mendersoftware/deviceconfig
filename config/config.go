@@ -58,7 +58,7 @@ const (
 	// SettingWorkflowsURL sets the base URL for the workflows orchestrator.
 	SettingWorkflowsURL = "workflows_url"
 	// SettingWorkflowsURLDefault sets the default workflows URL.
-	SettingWorkflowsURLDefault = "http://mender-workflows:8080"
+	SettingWorkflowsURLDefault = "http://mender-workflows-server:8080"
 
 	// SettingEnableAudit enables auditing of configuration events.
 	SettingEnableAudit        = "enable_audit"

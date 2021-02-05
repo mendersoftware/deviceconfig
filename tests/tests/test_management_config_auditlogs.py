@@ -61,7 +61,7 @@ class TestAuditlogs:
         expected = {
             "request": {
                 "scheme": "http",
-                "host": "mender-workflows",
+                "host": "mender-workflows-server",
                 "port": "8080",
                 "method": "POST",
                 "path": "/api/v1/workflow/emit_auditlog",
@@ -114,7 +114,7 @@ class TestAuditlogs:
             {
                 "request": {
                     "scheme": "http",
-                    "host": "mender-workflows",
+                    "host": "mender-workflows-server",
                     "port": "8080",
                     "method": "POST",
                     "path": "/api/v1/workflow/emit_auditlog",
@@ -132,7 +132,7 @@ class TestAuditlogs:
             {
                 "request": {
                     "scheme": "http",
-                    "host": "mender-workflows",
+                    "host": "mender-workflows-server",
                     "port": "8080",
                     "method": "POST",
                     "path": "/api/v1/workflow/deploy_device_configuration",
@@ -149,7 +149,7 @@ class TestAuditlogs:
             {
                 "request": {
                     "scheme": "http",
-                    "host": "mender-workflows",
+                    "host": "mender-workflows-server",
                     "port": "8080",
                     "method": "POST",
                     "path": "/api/v1/workflow/emit_auditlog",
