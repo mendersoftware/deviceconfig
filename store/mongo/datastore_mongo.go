@@ -35,11 +35,12 @@ const (
 	// CollDevices refers to the collection name for device configurations
 	CollDevices = "devices"
 	// fields
-	fieldID         = "_id"
-	fieldConfigured = "configured"
-	fieldReported   = "reported"
-	fieldUpdatedTs  = "updated_ts"
-	fieldReportedTs = "reported_ts"
+	fieldID           = "_id"
+	fieldConfigured   = "configured"
+	fieldReported     = "reported"
+	fieldUpdatedTs    = "updated_ts"
+	fieldReportedTs   = "reported_ts"
+	fieldDeploymentID = "deployment_id"
 )
 
 type MongoStoreConfig struct {
@@ -212,6 +213,33 @@ func (db *MongoStore) UpsertReportedConfiguration(ctx context.Context, dev model
 
 	_, err := collDevs.UpdateOne(ctx, fltr, update, mopts.Update().SetUpsert(true))
 	return errors.Wrap(err, "mongo: failed to store device reported configuration")
+}
+
+func (db *MongoStore) SetDeploymentID(ctx context.Context, devID uuid.UUID,
+	deploymentID uuid.UUID) error {
+	collDevs := db.Database(ctx).Collection(CollDevices)
+
+	fltr := bson.D{{
+		Key:   fieldID,
+		Value: devID,
+	}}
+
+	update := bson.M{
+		"$set": bson.D{
+			{
+				Key:   fieldDeploymentID,
+				Value: deploymentID,
+			},
+		},
+	}
+
+	res, err := collDevs.UpdateOne(ctx, fltr, update, mopts.Update())
+	if err != nil {
+		return errors.Wrap(err, "mongo: failed to set the deployment ID")
+	} else if res.MatchedCount == 0 {
+		return errors.Wrap(store.ErrDeviceNoExist, "mongo")
+	}
+	return nil
 }
 
 func (db *MongoStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {

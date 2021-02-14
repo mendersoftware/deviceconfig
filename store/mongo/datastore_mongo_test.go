@@ -643,6 +643,88 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 	}
 }
 
+func TestSetDeploymentID(t *testing.T) {
+	t.Parallel()
+
+	var testDevice = model.Device{
+		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		UpdatedTS: time.Now(),
+	}
+
+	testCases := []struct {
+		Name string
+
+		CTX          context.Context
+		ID           uuid.UUID
+		DeploymentID uuid.UUID
+
+		Error error
+	}{{
+		Name: "ok",
+
+		ID:           testDevice.ID,
+		DeploymentID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+	}, {
+		Name: "ok, tenant",
+
+		ID:           testDevice.ID,
+		DeploymentID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+
+		CTX: identity.WithContext(context.Background(),
+			&identity.Identity{
+				Tenant: "123456789012345678901234",
+			},
+		),
+	}, {
+
+		Name:         "error, device does not exist",
+		DeploymentID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+
+		Error: errors.New(`^mongo: ` + store.ErrDeviceNoExist.Error()),
+	}, {
+		Name:         "error, context canceled",
+		ID:           testDevice.ID,
+		DeploymentID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		CTX: func() context.Context {
+			ctx, cancel := context.WithCancel(context.TODO())
+			cancel()
+			return ctx
+		}(),
+
+		Error: errors.New(
+			`mongo: failed to set the deployment ID: .*` +
+				context.Canceled.Error() + `$`,
+		),
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			ds := GetTestDataStore(t)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+			defer ds.DropDatabase(ctx)
+			if tc.CTX == nil {
+				tc.CTX = ctx
+			} else if id := identity.FromContext(tc.CTX); id != nil {
+				ctx = identity.WithContext(ctx, id)
+			}
+			err := ds.InsertDevice(ctx, testDevice)
+			require.NoError(t, err)
+
+			err = ds.SetDeploymentID(tc.CTX, tc.ID, tc.DeploymentID)
+			if tc.Error != nil {
+				if assert.Error(t, err) {
+					assert.Regexp(t, tc.Error.Error(), err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestDeleteDevice(t *testing.T) {
 	t.Parallel()
 

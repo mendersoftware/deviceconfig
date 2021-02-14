@@ -380,10 +380,14 @@ func TestDeployConfiguration(t *testing.T) {
 		request model.DeployConfigurationRequest
 		err     error
 		wfErr   error
+		dsErr   error
 	}{
 		"ok": {},
 		"ko, deploy error": {
 			err: errors.New("error"),
+		},
+		"ko, dsErr": {
+			dsErr: errors.New("data store error"),
 		},
 		"ko, wfErr": {
 			wfErr: errors.New("workflow error"),
@@ -401,22 +405,32 @@ func TestDeployConfiguration(t *testing.T) {
 			ds := new(mstore.DataStore)
 			defer ds.AssertExpectations(t)
 
+			ds.On("SetDeploymentID",
+				mock.MatchedBy(func(ctx context.Context) bool {
+					return true
+				}),
+				tc.device.ID,
+				mock.AnythingOfType("uuid.UUID"),
+			).Return(tc.dsErr)
+
 			wflows := &mworkflows.Client{}
 			defer wflows.AssertExpectations(t)
 
 			configuration, _ := tc.device.ConfiguredAttributes.MarshalJSON()
-			wflows.On("DeployConfiguration",
-				mock.MatchedBy(func(ctx context.Context) bool {
-					return true
-				}),
-				"tenantID",
-				tc.device.ID,
-				mock.AnythingOfType("uuid.UUID"),
-				configuration,
-				tc.request.Retries,
-			).Return(tc.err)
+			if tc.dsErr == nil {
+				wflows.On("DeployConfiguration",
+					mock.MatchedBy(func(ctx context.Context) bool {
+						return true
+					}),
+					"tenantID",
+					tc.device.ID,
+					mock.AnythingOfType("uuid.UUID"),
+					configuration,
+					tc.request.Retries,
+				).Return(tc.err)
+			}
 
-			if tc.err == nil || tc.wfErr != nil {
+			if tc.dsErr == nil && tc.err == nil || tc.wfErr != nil {
 				wflows.On("SubmitAuditLog",
 					mock.MatchedBy(func(ctx context.Context) bool {
 						return true

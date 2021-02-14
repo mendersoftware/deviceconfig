@@ -149,6 +149,20 @@ func (_m *DataStore) Ping(ctx context.Context) error {
 	return r0
 }
 
+// SetDeploymentID provides a mock function with given fields: ctx, devID, deploymentID
+func (_m *DataStore) SetDeploymentID(ctx context.Context, devID uuid.UUID, deploymentID uuid.UUID) error {
+	ret := _m.Called(ctx, devID, deploymentID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = rf(ctx, devID, deploymentID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpsertConfiguration provides a mock function with given fields: ctx, dev
 func (_m *DataStore) UpsertConfiguration(ctx context.Context, dev model.Device) error {
 	ret := _m.Called(ctx, dev)

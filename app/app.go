@@ -165,7 +165,12 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 	if identity == nil || !identity.IsUser {
 		return response, errors.New("identity missing from the context")
 	}
-	response.DeploymentID = uuid.New()
+	deploymentID := uuid.New()
+	err = a.store.SetDeploymentID(ctx, device.ID, deploymentID)
+	if err != nil {
+		return response, nil
+	}
+	response.DeploymentID = deploymentID
 	err = a.workflows.DeployConfiguration(ctx, identity.Tenant, device.ID,
 		response.DeploymentID, configuration, request.Retries)
 	if err != nil {
