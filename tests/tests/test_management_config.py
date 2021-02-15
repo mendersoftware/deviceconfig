@@ -262,3 +262,9 @@ class TestManagementConfig:
         )
         assert r.status == 200
         assert "deployment_id" in str(r.data)
+        #
+        # get the deployment ID
+        r = client.get_device_configuration(device_id)
+        data = r.to_dict()
+        assert "deployment_id" in data.keys()
+        assert "" != data["deployment_id"]

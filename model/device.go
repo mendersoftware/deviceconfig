@@ -30,6 +30,8 @@ type Device struct {
 	ConfiguredAttributes Attributes `bson:"configured,omitempty" json:"configured"`
 	// ReportedAttributes are the configuration reported by the device.
 	ReportedAttributes Attributes `bson:"reported,omitempty" json:"reported"`
+	// DeploymentID is the ID of the latest configuration deployment
+	DeploymentID uuid.UUID `bson:"deployment_id,omitempty" json:"deployment_id,omitempty"`
 
 	// UpdatedTS holds the timestamp for when the desired state changed,
 	// including when the object was created.

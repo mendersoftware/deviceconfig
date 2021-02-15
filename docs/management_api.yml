@@ -59,6 +59,10 @@ paths:
                   reported:
                     type: object
                     $ref: '#/components/schemas/Configuration'
+                  deployment_id:
+                    description: ID of the latest configuration deployment
+                    type: string
+                    format: uuid
                   reported_ts:
                     type: string
                     format: date-time
