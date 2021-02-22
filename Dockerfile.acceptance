@@ -9,7 +9,7 @@ RUN cd /go/src/github.com/mendersoftware/deviceconfig && \
     env CGO_ENABLED=1 go test -c -o deviceconfig.test \
     -cover -covermode=atomic
 
-FROM alpine:3.13.1
+FROM alpine:3.13.2
 RUN apk add --no-cache ca-certificates xz
 RUN mkdir -p /etc/deviceconfig
 COPY ./config.yaml /etc/deviceconfig
