@@ -45,11 +45,11 @@ func (_m *DataStore) Close(ctx context.Context) error {
 }
 
 // DeleteDevice provides a mock function with given fields: ctx, devID
-func (_m *DataStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {
+func (_m *DataStore) DeleteDevice(ctx context.Context, devID string) error {
 	ret := _m.Called(ctx, devID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
 		r0 = rf(ctx, devID)
 	} else {
 		r0 = ret.Error(0)
@@ -73,18 +73,18 @@ func (_m *DataStore) DropDatabase(ctx context.Context) error {
 }
 
 // GetDevice provides a mock function with given fields: ctx, devID
-func (_m *DataStore) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
+func (_m *DataStore) GetDevice(ctx context.Context, devID string) (model.Device, error) {
 	ret := _m.Called(ctx, devID)
 
 	var r0 model.Device
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) model.Device); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) model.Device); ok {
 		r0 = rf(ctx, devID)
 	} else {
 		r0 = ret.Get(0).(model.Device)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, devID)
 	} else {
 		r1 = ret.Error(1)
@@ -150,11 +150,11 @@ func (_m *DataStore) Ping(ctx context.Context) error {
 }
 
 // SetDeploymentID provides a mock function with given fields: ctx, devID, deploymentID
-func (_m *DataStore) SetDeploymentID(ctx context.Context, devID uuid.UUID, deploymentID uuid.UUID) error {
+func (_m *DataStore) SetDeploymentID(ctx context.Context, devID string, deploymentID uuid.UUID) error {
 	ret := _m.Called(ctx, devID, deploymentID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, uuid.UUID) error); ok {
 		r0 = rf(ctx, devID, deploymentID)
 	} else {
 		r0 = ret.Error(0)

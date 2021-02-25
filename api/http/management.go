@@ -23,7 +23,6 @@ import (
 	"github.com/mendersoftware/deviceconfig/store"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
@@ -50,16 +49,9 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 	var configuration model.Attributes
 
 	ctx := c.Request.Context()
-	devID, err := uuid.Parse(c.Param("device_id"))
-	if err != nil {
-		rest.RenderError(c,
-			http.StatusBadRequest,
-			errors.Wrap(err, "correctly formatted device id is needed"),
-		)
-		return
-	}
+	devID := c.Param("device_id")
 
-	err = c.ShouldBindJSON(&configuration)
+	err := c.ShouldBindJSON(&configuration)
 	if err != nil {
 		rest.RenderError(c,
 			http.StatusBadRequest,
@@ -71,7 +63,7 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 	// RBAC
 	if len(c.Request.Header.Get(model.RBACHeaderDeploymentsGroups)) > 1 {
 		allowed, err := api.isAllowed(
-			ctx, c.Request, devID.String(), model.RBACHeaderDeploymentsGroups)
+			ctx, c.Request, devID, model.RBACHeaderDeploymentsGroups)
 		if err != nil {
 			c.Error(err) //nolint:errcheck
 			rest.RenderError(c,
@@ -112,19 +104,12 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	devID, err := uuid.Parse(c.Param("device_id"))
-	if err != nil {
-		rest.RenderError(c,
-			http.StatusBadRequest,
-			errors.Wrap(err, "correctly formatted device id is needed"),
-		)
-		return
-	}
+	devID := c.Param("device_id")
 
 	// RBAC
 	if len(c.Request.Header.Get(model.RBACHeaderInvetoryGroups)) > 1 {
 		allowed, err := api.isAllowed(
-			ctx, c.Request, devID.String(), model.RBACHeaderInvetoryGroups)
+			ctx, c.Request, devID, model.RBACHeaderInvetoryGroups)
 		if err != nil {
 			c.Error(err) //nolint:errcheck
 			rest.RenderError(c,
@@ -165,19 +150,12 @@ func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 
 func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 	ctx := c.Request.Context()
-	devID, err := uuid.Parse(c.Param("device_id"))
-	if err != nil {
-		rest.RenderError(c,
-			http.StatusBadRequest,
-			errors.Wrap(err, "correctly formatted device id is needed"),
-		)
-		return
-	}
+	devID := c.Param("device_id")
 
 	// RBAC
 	if len(c.Request.Header.Get(model.RBACHeaderDeploymentsGroups)) > 1 {
 		allowed, err := api.isAllowed(
-			ctx, c.Request, devID.String(), model.RBACHeaderDeploymentsGroups)
+			ctx, c.Request, devID, model.RBACHeaderDeploymentsGroups)
 		if err != nil {
 			c.Error(err) //nolint:errcheck
 			rest.RenderError(c,

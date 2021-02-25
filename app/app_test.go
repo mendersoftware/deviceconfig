@@ -81,7 +81,7 @@ func TestProvisionDevice(t *testing.T) {
 	t.Parallel()
 	ctx := context.TODO()
 	dev := model.NewDevice{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 	}
 	deviceMatcher := mock.MatchedBy(func(d model.Device) bool {
 		if !assert.Equal(t, dev.ID, d.ID) {
@@ -103,10 +103,10 @@ func TestGetDevice(t *testing.T) {
 	t.Parallel()
 	ctx := context.TODO()
 	dev := model.NewDevice{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 	}
 	device := model.Device{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 	}
 	deviceMatcher := mock.MatchedBy(func(d model.Device) bool {
 		if !assert.Equal(t, dev.ID, d.ID) {
@@ -133,7 +133,7 @@ func TestDecommissionDevice(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.TODO()
-	devID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io"))
+	devID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String()
 
 	ds := new(mstore.DataStore)
 	defer ds.AssertExpectations(t)
@@ -148,10 +148,10 @@ func TestSetConfiguration(t *testing.T) {
 	t.Parallel()
 	ctx := context.TODO()
 	dev := model.NewDevice{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 	}
 	device := model.Device{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "hostname",
@@ -237,7 +237,7 @@ func TestSetConfigurationWithAuditLogs(t *testing.T) {
 			})
 
 			dev := model.NewDevice{
-				ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+				ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 			}
 			configuration := []model.Attribute{
 				{
@@ -271,7 +271,7 @@ func TestSetConfigurationWithAuditLogs(t *testing.T) {
 						Type: workflows.ActorUser,
 					}, log.Actor)
 					assert.Equal(t, workflows.Object{
-						ID:   dev.ID.String(),
+						ID:   dev.ID,
 						Type: workflows.ObjectDevice,
 					}, log.Object)
 					assert.Equal(t, "{\"hostname\":\"some0\"}", log.Change)
@@ -300,10 +300,10 @@ func TestSetReportedConfiguration(t *testing.T) {
 	t.Parallel()
 	ctx := context.TODO()
 	dev := model.NewDevice{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 	}
 	device := model.Device{
-		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "hostname",
@@ -442,7 +442,7 @@ func TestDeployConfiguration(t *testing.T) {
 							Type: workflows.ActorUser,
 						}, log.Actor)
 						assert.Equal(t, workflows.Object{
-							ID:   tc.device.ID.String(),
+							ID:   tc.device.ID,
 							Type: workflows.ObjectDevice,
 						}, log.Object)
 						assert.Equal(t, string(configuration), log.Change)

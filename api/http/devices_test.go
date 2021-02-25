@@ -65,7 +65,7 @@ func TestDevicesSetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("SetReportedConfiguration",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 					model.Attributes{
 						{
 							Key:   "key0",
@@ -99,7 +99,7 @@ func TestDevicesSetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("SetReportedConfiguration",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 					model.Attributes{
 						{
 							Key:   "key0",
@@ -231,7 +231,7 @@ func TestDevicesGetConfiguration(t *testing.T) {
 	t.Parallel()
 
 	device := model.Device{
-		ID: uuid.New(),
+		ID: uuid.New().String(),
 		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "key1",
@@ -283,7 +283,7 @@ func TestDevicesGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(device, nil)
 				return app
 			}(),
@@ -365,7 +365,7 @@ func TestDevicesGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(device, errors.New("some other error"))
 				return app
 			}(),

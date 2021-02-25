@@ -54,11 +54,11 @@ type DataStore interface {
 	UpsertReportedConfiguration(ctx context.Context, dev model.Device) error
 
 	// SetDeploymentID updates the deployment ID of the device
-	SetDeploymentID(ctx context.Context, devID uuid.UUID, deploymentID uuid.UUID) error
+	SetDeploymentID(ctx context.Context, devID string, deploymentID uuid.UUID) error
 
 	// DeleteDevice removes the device object with the given ID from the database.
-	DeleteDevice(ctx context.Context, devID uuid.UUID) error
+	DeleteDevice(ctx context.Context, devID string) error
 
 	// GetDevice returns a device
-	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
+	GetDevice(ctx context.Context, devID string) (model.Device, error)
 }

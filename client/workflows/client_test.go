@@ -425,7 +425,7 @@ func TestDeployConfiguration(t *testing.T) {
 
 		CTX           context.Context
 		tenantID      string
-		deviceID      uuid.UUID
+		deviceID      string
 		deploymentID  uuid.UUID
 		configuration []byte
 		retries       uint
@@ -447,7 +447,7 @@ func TestDeployConfiguration(t *testing.T) {
 			"testing"),
 
 		tenantID:      "tenantID",
-		deviceID:      uuid.New(),
+		deviceID:      uuid.New().String(),
 		deploymentID:  uuid.New(),
 		configuration: []byte("{\"key\":\"value\"}"),
 		retries:       1,
@@ -468,7 +468,7 @@ func TestDeployConfiguration(t *testing.T) {
 			"testing"),
 
 		tenantID:      "tenantID",
-		deviceID:      uuid.New(),
+		deviceID:      uuid.New().String(),
 		deploymentID:  uuid.New(),
 		configuration: []byte("{\"key\":\"value\"}"),
 		retries:       1,
@@ -494,7 +494,7 @@ func TestDeployConfiguration(t *testing.T) {
 		}(),
 
 		tenantID:      "tenantID",
-		deviceID:      uuid.New(),
+		deviceID:      uuid.New().String(),
 		deploymentID:  uuid.New(),
 		configuration: []byte("{\"key\":\"value\"}"),
 		retries:       1,
@@ -519,7 +519,7 @@ func TestDeployConfiguration(t *testing.T) {
 		),
 
 		tenantID:      "tenantID",
-		deviceID:      uuid.New(),
+		deviceID:      uuid.New().String(),
 		deploymentID:  uuid.New(),
 		configuration: []byte("{\"key\":\"value\"}"),
 		retries:       1,
@@ -541,7 +541,7 @@ func TestDeployConfiguration(t *testing.T) {
 		),
 
 		tenantID:      "tenantID",
-		deviceID:      uuid.New(),
+		deviceID:      uuid.New().String(),
 		deploymentID:  uuid.New(),
 		configuration: []byte("{\"key\":\"value\"}"),
 		retries:       1,
