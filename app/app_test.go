@@ -42,7 +42,7 @@ func TestHealthCheck(t *testing.T) {
 		}),
 	).Return(err)
 
-	app := New(store, nil, Config{})
+	app := New(store, nil, nil, Config{})
 
 	ctx := context.Background()
 	res := app.HealthCheck(ctx)
@@ -72,7 +72,7 @@ func TestProvisionTenant(t *testing.T) {
 
 	defer ds.AssertExpectations(t)
 
-	app := New(ds, nil, Config{})
+	app := New(ds, nil, nil, Config{})
 	err := app.ProvisionTenant(ctx, tenant)
 	assert.NoError(t, err)
 }
@@ -94,7 +94,7 @@ func TestProvisionDevice(t *testing.T) {
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
 
-	app := New(ds, nil, Config{})
+	app := New(ds, nil, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 }
@@ -120,7 +120,7 @@ func TestGetDevice(t *testing.T) {
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
-	app := New(ds, nil, Config{})
+	app := New(ds, nil, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
@@ -139,7 +139,7 @@ func TestDecommissionDevice(t *testing.T) {
 	defer ds.AssertExpectations(t)
 	ds.On("DeleteDevice", ctx, devID).Return(nil)
 
-	app := New(ds, nil, Config{})
+	app := New(ds, nil, nil, Config{})
 	err := app.DecommissionDevice(ctx, devID)
 	assert.NoError(t, err)
 }
@@ -178,7 +178,7 @@ func TestSetConfiguration(t *testing.T) {
 	ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
-	app := New(ds, nil, Config{})
+	app := New(ds, nil, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
@@ -281,7 +281,7 @@ func TestSetConfigurationWithAuditLogs(t *testing.T) {
 				}),
 			).Return(tc.err)
 
-			app := New(ds, wflows, Config{HaveAuditLogs: true})
+			app := New(ds, nil, wflows, Config{HaveAuditLogs: true})
 			err := app.ProvisionDevice(ctx, dev)
 			assert.NoError(t, err)
 
@@ -336,7 +336,7 @@ func TestSetReportedConfiguration(t *testing.T) {
 	ds.On("UpsertReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
-	app := New(ds, nil, Config{})
+	app := New(ds, nil, nil, Config{})
 	err := app.ProvisionDevice(ctx, dev)
 	assert.NoError(t, err)
 
@@ -453,7 +453,7 @@ func TestDeployConfiguration(t *testing.T) {
 				).Return(tc.wfErr)
 			}
 
-			app := New(ds, wflows, Config{HaveAuditLogs: true})
+			app := New(ds, nil, wflows, Config{HaveAuditLogs: true})
 			_, err := app.DeployConfiguration(ctx, tc.device, tc.request)
 			if tc.err != nil {
 				assert.Error(t, err, tc.err)
