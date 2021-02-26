@@ -47,9 +47,12 @@ type App interface {
 	DecommissionDevice(ctx context.Context, devID uuid.UUID) error
 
 	SetConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
-	SetReportedConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
+	SetReportedConfiguration(ctx context.Context, devID uuid.UUID,
+		configuration model.Attributes) error
 	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
-	DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
+	DeployConfiguration(ctx context.Context,
+		device model.Device,
+		request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
 
 	AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error)
 }
