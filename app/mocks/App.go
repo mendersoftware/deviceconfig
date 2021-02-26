@@ -30,6 +30,27 @@ type App struct {
 	mock.Mock
 }
 
+// AreDevicesInGroup provides a mock function with given fields: ctx, devices, group
+func (_m *App) AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error) {
+	ret := _m.Called(ctx, devices, group)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, []string, string) bool); ok {
+		r0 = rf(ctx, devices, group)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []string, string) error); ok {
+		r1 = rf(ctx, devices, group)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // DecommissionDevice provides a mock function with given fields: ctx, devID
 func (_m *App) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
 	ret := _m.Called(ctx, devID)
@@ -52,9 +73,7 @@ func (_m *App) DeployConfiguration(ctx context.Context, device model.Device, req
 	if rf, ok := ret.Get(0).(func(context.Context, model.Device, model.DeployConfigurationRequest) model.DeployConfigurationResponse); ok {
 		r0 = rf(ctx, device, request)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(model.DeployConfigurationResponse)
-		}
+		r0 = ret.Get(0).(model.DeployConfigurationResponse)
 	}
 
 	var r1 error

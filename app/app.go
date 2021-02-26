@@ -50,6 +50,8 @@ type App interface {
 	SetReportedConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
 	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
 	DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
+
+	AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error)
 }
 
 // app is an app object
@@ -201,4 +203,8 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 		}
 	}
 	return response, nil
+}
+
+func (a *app) AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error) {
+	return a.inventory.AreDevicesInGroup(ctx, devices, group)
 }

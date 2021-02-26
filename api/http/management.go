@@ -16,6 +16,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
@@ -61,6 +62,32 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 		return
 	}
 
+	// RBAC
+	if len(c.Request.Header.Get(model.RBACHeaderDeploymentsGroups)) > 1 {
+		allowed := false
+		for _, group := range strings.Split(
+			c.Request.Header.Get(model.RBACHeaderDeploymentsGroups), ",") {
+			allowed, err = api.App.AreDevicesInGroup(
+				ctx, []string{devID.String()}, group)
+			if err != nil {
+				c.Error(err) //nolint:errcheck
+				rest.RenderError(c,
+					http.StatusInternalServerError,
+					errors.New(http.StatusText(http.StatusInternalServerError)),
+				)
+				return
+			}
+			if allowed {
+				break
+			}
+		}
+		if !allowed {
+			rest.RenderError(
+				c, http.StatusForbidden, errors.New("Access denied (RBAC)."))
+			return
+		}
+	}
+
 	for _, a := range configuration {
 		if err := a.Validate(); err != nil {
 			rest.RenderError(c,
@@ -95,6 +122,32 @@ func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 		return
 	}
 
+	// RBAC
+	if len(c.Request.Header.Get(model.RBACHeaderInvetoryGroups)) > 1 {
+		allowed := false
+		for _, group := range strings.Split(
+			c.Request.Header.Get(model.RBACHeaderInvetoryGroups), ",") {
+			allowed, err = api.App.AreDevicesInGroup(
+				ctx, []string{devID.String()}, group)
+			if err != nil {
+				c.Error(err) //nolint:errcheck
+				rest.RenderError(c,
+					http.StatusInternalServerError,
+					errors.New(http.StatusText(http.StatusInternalServerError)),
+				)
+				return
+			}
+			if allowed {
+				break
+			}
+		}
+		if !allowed {
+			rest.RenderError(
+				c, http.StatusForbidden, errors.New("Access denied (RBAC)."))
+			return
+		}
+	}
+
 	device, err := api.App.GetDevice(ctx, devID)
 	if err != nil {
 		switch cause := errors.Cause(err); cause {
@@ -127,6 +180,32 @@ func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 			errors.Wrap(err, "correctly formatted device id is needed"),
 		)
 		return
+	}
+
+	// RBAC
+	if len(c.Request.Header.Get(model.RBACHeaderDeploymentsGroups)) > 1 {
+		allowed := false
+		for _, group := range strings.Split(
+			c.Request.Header.Get(model.RBACHeaderDeploymentsGroups), ",") {
+			allowed, err = api.App.AreDevicesInGroup(
+				ctx, []string{devID.String()}, group)
+			if err != nil {
+				c.Error(err) //nolint:errcheck
+				rest.RenderError(c,
+					http.StatusInternalServerError,
+					errors.New(http.StatusText(http.StatusInternalServerError)),
+				)
+				return
+			}
+			if allowed {
+				break
+			}
+		}
+		if !allowed {
+			rest.RenderError(
+				c, http.StatusForbidden, errors.New("Access denied (RBAC)."))
+			return
+		}
 	}
 
 	device, err := api.App.GetDevice(ctx, devID)
