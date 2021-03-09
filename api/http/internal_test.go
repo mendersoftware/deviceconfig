@@ -245,7 +245,7 @@ func TestProvisionTenant(t *testing.T) {
 
 func TestProvisionDevice(t *testing.T) {
 	t.Parallel()
-	newDeviceMatcher := func(expected uuid.UUID) interface{} {
+	newDeviceMatcher := func(expected string) interface{} {
 		return mock.MatchedBy(func(dev model.NewDevice) bool {
 			return assert.Equal(t, expected, dev.ID)
 		})
@@ -281,7 +281,7 @@ func TestProvisionDevice(t *testing.T) {
 				contextMatcher,
 				newDeviceMatcher(uuid.NewSHA1(
 					uuid.NameSpaceDNS, []byte("mender.io"),
-				)),
+				).String()),
 			).Return(nil)
 			return app
 		}(),
@@ -353,7 +353,7 @@ func TestProvisionDevice(t *testing.T) {
 				contextMatcher,
 				newDeviceMatcher(uuid.NewSHA1(
 					uuid.NameSpaceDNS, []byte("mender.io"),
-				)),
+				).String()),
 			).Return(errors.New("something went wrong!"))
 			return app
 		}(),
@@ -386,7 +386,7 @@ func TestProvisionDevice(t *testing.T) {
 				contextMatcher,
 				newDeviceMatcher(uuid.NewSHA1(
 					uuid.NameSpaceDNS, []byte("mender.io"),
-				)),
+				).String()),
 			).Return(store.ErrDeviceAlreadyExists)
 			return app
 		}(),
@@ -449,7 +449,7 @@ func TestDecommissionDevice(t *testing.T) {
 				contextMatcher,
 				uuid.NewSHA1(
 					uuid.NameSpaceDNS, []byte("mender.io"),
-				),
+				).String(),
 			).Return(nil)
 			return app
 		}(),
@@ -479,7 +479,7 @@ func TestDecommissionDevice(t *testing.T) {
 				contextMatcher,
 				uuid.NewSHA1(
 					uuid.NameSpaceDNS, []byte("mender.io"),
-				),
+				).String(),
 			).Return(errors.Wrap(store.ErrDeviceNoExist, "mongo"))
 			return app
 		}(),
@@ -488,29 +488,6 @@ func TestDecommissionDevice(t *testing.T) {
 			RequestID: "test",
 		},
 		Status: http.StatusNotFound,
-	}, {
-		Name: "error invalid request parameters",
-
-		Request: func() *http.Request {
-			repl := strings.NewReplacer(
-				":tenant_id", "123456789012345678901234",
-				":device_id", "notUUID",
-			)
-			req, _ := http.NewRequest("DELETE",
-				"http://localhost"+URIInternal+
-					repl.Replace(URITenantDevice),
-				nil,
-			)
-			req.Header.Set("X-Men-Requestid", "test")
-			return req
-		}(),
-
-		App: new(mapp.App),
-		Error: &rest.Error{
-			Err:       "device_id is not a valid UUID.",
-			RequestID: "test",
-		},
-		Status: http.StatusBadRequest,
 	}, {
 		Name: "error, internal server error",
 
@@ -536,7 +513,7 @@ func TestDecommissionDevice(t *testing.T) {
 				contextMatcher,
 				uuid.NewSHA1(
 					uuid.NameSpaceDNS, []byte("mender.io"),
-				),
+				).String(),
 			).Return(errors.New("Oh noez!"))
 			return app
 		}(),

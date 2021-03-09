@@ -170,7 +170,7 @@ func TestInsertDevice(t *testing.T) {
 		Name: "ok",
 
 		Devices: []model.Device{{
-			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 			UpdatedTS: time.Now(),
 		}},
 	}, {
@@ -189,7 +189,7 @@ func TestInsertDevice(t *testing.T) {
 		}(),
 
 		Devices: []model.Device{{
-			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 			UpdatedTS: time.Now(),
 		}},
 		Error: errors.New(
@@ -200,10 +200,10 @@ func TestInsertDevice(t *testing.T) {
 		Name: "error, duplicate key",
 
 		Devices: []model.Device{{
-			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 			UpdatedTS: time.Now(),
 		}, {
-			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 			UpdatedTS: time.Now(),
 		}},
 		Error: store.ErrDeviceAlreadyExists,
@@ -241,7 +241,7 @@ func TestInsertDevice(t *testing.T) {
 
 func TestGetDevice(t *testing.T) {
 	t.Parallel()
-	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io"))
+	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String()
 	testCases := []struct {
 		Name string
 
@@ -355,7 +355,7 @@ func TestGetDevice(t *testing.T) {
 
 			for _, dev := range tc.Devices {
 				if tc.Error != nil {
-					_, err := ds.GetDevice(tc.CTX, uuid.New())
+					_, err := ds.GetDevice(tc.CTX, uuid.New().String())
 					assert.EqualError(t, tc.Error, err.Error())
 					break
 				}
@@ -371,7 +371,7 @@ func TestGetDevice(t *testing.T) {
 
 func TestUpsertConfiguration(t *testing.T) {
 	t.Parallel()
-	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io"))
+	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String()
 	testCases := []struct {
 		Name string
 
@@ -509,7 +509,7 @@ func TestUpsertConfiguration(t *testing.T) {
 
 func TestUpsertReportedConfiguration(t *testing.T) {
 	t.Parallel()
-	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io"))
+	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String()
 	testCases := []struct {
 		Name string
 
@@ -647,7 +647,7 @@ func TestSetDeploymentID(t *testing.T) {
 	t.Parallel()
 
 	var testDevice = model.Device{
-		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 		UpdatedTS: time.Now(),
 	}
 
@@ -655,7 +655,7 @@ func TestSetDeploymentID(t *testing.T) {
 		Name string
 
 		CTX          context.Context
-		ID           uuid.UUID
+		ID           string
 		DeploymentID uuid.UUID
 
 		Error error
@@ -729,7 +729,7 @@ func TestDeleteDevice(t *testing.T) {
 	t.Parallel()
 
 	var testDevice = model.Device{
-		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")),
+		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
 		UpdatedTS: time.Now(),
 	}
 
@@ -737,7 +737,7 @@ func TestDeleteDevice(t *testing.T) {
 		Name string
 
 		CTX context.Context
-		ID  uuid.UUID
+		ID  string
 
 		Error error
 	}{{

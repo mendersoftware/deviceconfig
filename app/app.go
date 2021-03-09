@@ -23,6 +23,7 @@ import (
 
 	"github.com/mendersoftware/go-lib-micro/identity"
 
+	"github.com/mendersoftware/deviceconfig/client/inventory"
 	"github.com/mendersoftware/deviceconfig/client/workflows"
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
@@ -43,17 +44,20 @@ type App interface {
 	ProvisionTenant(ctx context.Context, tenant model.NewTenant) error
 
 	ProvisionDevice(ctx context.Context, dev model.NewDevice) error
-	DecommissionDevice(ctx context.Context, devID uuid.UUID) error
+	DecommissionDevice(ctx context.Context, devID string) error
 
-	SetConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
-	SetReportedConfiguration(ctx context.Context, devID uuid.UUID, configuration model.Attributes) error
-	GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error)
+	SetConfiguration(ctx context.Context, devID string, configuration model.Attributes) error
+	SetReportedConfiguration(ctx context.Context, devID string, configuration model.Attributes) error
+	GetDevice(ctx context.Context, devID string) (model.Device, error)
 	DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
+
+	AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error)
 }
 
 // app is an app object
 type app struct {
 	store     store.DataStore
+	inventory inventory.Client
 	workflows workflows.Client
 	Config
 }
@@ -63,7 +67,7 @@ type Config struct {
 }
 
 // NewApp initialize a new deviceconfig App
-func New(ds store.DataStore, wf workflows.Client, config ...Config) App {
+func New(ds store.DataStore, inv inventory.Client, wf workflows.Client, config ...Config) App {
 	conf := Config{}
 	for _, cfgIn := range config {
 		if cfgIn.HaveAuditLogs {
@@ -72,6 +76,7 @@ func New(ds store.DataStore, wf workflows.Client, config ...Config) App {
 	}
 	return &app{
 		store:     ds,
+		inventory: inv,
 		workflows: wf,
 		Config:    conf,
 	}
@@ -96,12 +101,12 @@ func (a *app) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {
 	})
 }
 
-func (a *app) DecommissionDevice(ctx context.Context, devID uuid.UUID) error {
+func (a *app) DecommissionDevice(ctx context.Context, devID string) error {
 	return a.store.DeleteDevice(ctx, devID)
 }
 
 func (a *app) SetConfiguration(ctx context.Context,
-	devID uuid.UUID,
+	devID string,
 	configuration model.Attributes) error {
 	err := a.store.UpsertConfiguration(ctx, model.Device{
 		ID:                   devID,
@@ -123,7 +128,7 @@ func (a *app) SetConfiguration(ctx context.Context,
 					Type: workflows.ActorUser,
 				},
 				Object: workflows.Object{
-					ID:   devID.String(),
+					ID:   devID,
 					Type: workflows.ObjectDevice,
 				},
 				Change:  string(configuration),
@@ -141,7 +146,7 @@ func (a *app) SetConfiguration(ctx context.Context,
 }
 
 func (a *app) SetReportedConfiguration(ctx context.Context,
-	devID uuid.UUID,
+	devID string,
 	configuration model.Attributes) error {
 	return a.store.UpsertReportedConfiguration(ctx, model.Device{
 		ID:                 devID,
@@ -150,7 +155,7 @@ func (a *app) SetReportedConfiguration(ctx context.Context,
 	})
 }
 
-func (a *app) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
+func (a *app) GetDevice(ctx context.Context, devID string) (model.Device, error) {
 	return a.store.GetDevice(ctx, devID)
 }
 
@@ -185,7 +190,7 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 				Type: workflows.ActorUser,
 			},
 			Object: workflows.Object{
-				ID:   device.ID.String(),
+				ID:   device.ID,
 				Type: workflows.ObjectDevice,
 			},
 			Change:  string(configuration),
@@ -198,4 +203,8 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 		}
 	}
 	return response, nil
+}
+
+func (a *app) AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error) {
+	return a.inventory.AreDevicesInGroup(ctx, devices, group)
 }

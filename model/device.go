@@ -24,7 +24,7 @@ import (
 
 type Device struct {
 	// ID is the device id assigned by deviceauth
-	ID uuid.UUID `bson:"_id" json:"id"`
+	ID string `bson:"_id" json:"id"`
 
 	// ConfiguredAttributes are the configured attributes for the device.
 	ConfiguredAttributes Attributes `bson:"configured,omitempty" json:"configured"`
@@ -42,7 +42,7 @@ type Device struct {
 
 func (dev Device) Validate() error {
 	err := validation.ValidateStruct(&dev,
-		validation.Field(&dev.ID, uuidNotEmpty),
+		validation.Field(&dev.ID, validation.Required),
 		validation.Field(&dev.ConfiguredAttributes, validateAttributes),
 		validation.Field(&dev.ReportedAttributes, validateAttributes),
 	)
@@ -50,11 +50,11 @@ func (dev Device) Validate() error {
 }
 
 type NewDevice struct {
-	ID uuid.UUID `json:"device_id"`
+	ID string `json:"device_id"`
 }
 
 func (dev NewDevice) Validate() error {
 	return validation.ValidateStruct(&dev,
-		validation.Field(&dev.ID, uuidNotEmpty),
+		validation.Field(&dev.ID, validation.Required),
 	)
 }

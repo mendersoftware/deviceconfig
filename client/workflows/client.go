@@ -40,11 +40,11 @@ const (
 )
 
 // Client is the workflows client
-//go:generate ../../utils/mockgen.sh
+//go:generate ../../x/mockgen.sh
 type Client interface {
 	CheckHealth(ctx context.Context) error
 	SubmitAuditLog(ctx context.Context, log AuditLog) error
-	DeployConfiguration(ctx context.Context, tenantID string, deviceID uuid.UUID,
+	DeployConfiguration(ctx context.Context, tenantID string, deviceID string,
 		deploymentID uuid.UUID, configuration []byte, retries uint) error
 }
 
@@ -161,7 +161,7 @@ func (c *client) SubmitAuditLog(ctx context.Context, log AuditLog) error {
 	)
 }
 
-func (c *client) DeployConfiguration(ctx context.Context, tenantID string, deviceID uuid.UUID,
+func (c *client) DeployConfiguration(ctx context.Context, tenantID string, deviceID string,
 	deploymentID uuid.UUID, configuration []byte, retries uint) error {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc

@@ -1,19 +1,19 @@
-FROM golang:1.15-alpine3.12 as builder
+FROM golang:1.16.0-alpine3.12 as builder
 RUN apk add --no-cache \
     xz-dev \
     musl-dev \
-    gcc
+    gcc \
+    make
 RUN mkdir -p /go/src/github.com/mendersoftware/deviceconfig
 COPY . /go/src/github.com/mendersoftware/deviceconfig
 RUN cd /go/src/github.com/mendersoftware/deviceconfig && \
-    env CGO_ENABLED=1 go test -c -o deviceconfig.test \
-    -cover -covermode=atomic
+    make build-test
 
-FROM alpine:3.13.1
+FROM alpine:3.13.2
 RUN apk add --no-cache ca-certificates xz
 RUN mkdir -p /etc/deviceconfig
 COPY ./config.yaml /etc/deviceconfig
-COPY --from=builder /go/src/github.com/mendersoftware/deviceconfig/deviceconfig.test /usr/bin
+COPY --from=builder /go/src/github.com/mendersoftware/deviceconfig/bin/deviceconfig.test /usr/bin
 ENTRYPOINT ["/usr/bin/deviceconfig.test", \
         "-test.coverprofile=/testing/coverage-acceptance.txt", \
         "-acceptance-testing", \
