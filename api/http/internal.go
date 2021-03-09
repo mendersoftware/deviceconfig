@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/mendersoftware/go-lib-micro/identity"
@@ -136,15 +135,7 @@ func (api *InternalAPI) DecommissionDevice(c *gin.Context) {
 	)
 	c.Request = c.Request.WithContext(ctx)
 
-	deviceUUID, err := uuid.Parse(deviceID)
-	if err != nil {
-		rest.RenderError(c, http.StatusBadRequest,
-			errors.New("device_id is not a valid UUID."),
-		)
-		return
-	}
-
-	err = api.App.DecommissionDevice(ctx, deviceUUID)
+	err := api.App.DecommissionDevice(ctx, deviceID)
 	if err != nil {
 		switch errors.Cause(err) {
 		case store.ErrDeviceNoExist:

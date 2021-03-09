@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -36,16 +35,6 @@ var (
 			// NOTE: we will support more types in the future
 			return errors.Errorf("invalid type: %T", value)
 		}
-	})
-
-	uuidNotEmpty = validation.By(func(value interface{}) error {
-		uid, ok := value.(uuid.UUID)
-		if !ok {
-			return errors.Errorf("value is not a UUID type: %T", value)
-		} else if uid == uuid.Nil {
-			return errors.New("cannot be blank")
-		}
-		return nil
 	})
 
 	validateAttributes = validation.By(func(value interface{}) error {

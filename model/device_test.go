@@ -44,7 +44,7 @@ func TestDeviceValidate(t *testing.T) {
 		Name: "ok",
 
 		Device: Device{
-			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")).String(),
 			ConfiguredAttributes: []Attribute{{
 				Key:   "HOME",
 				Value: "/root",
@@ -55,7 +55,7 @@ func TestDeviceValidate(t *testing.T) {
 		Name: "error, bad type",
 
 		Device: Device{
-			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")).String(),
 			ReportedAttributes: []Attribute{{
 				Key:   "illegal",
 				Value: true,
@@ -81,7 +81,8 @@ func TestDeviceValidate(t *testing.T) {
 		Name: "error, too many configuration keys",
 
 		Device: Device{
-			ID:                   uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")),
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("digest")).
+				String(),
 			ConfiguredAttributes: tooManyAttributes,
 		},
 		Error: errors.New(

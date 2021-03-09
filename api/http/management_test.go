@@ -72,7 +72,7 @@ func TestSetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("SetConfiguration",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 					model.Attributes{
 						{
 							Key:   "key0",
@@ -111,7 +111,7 @@ func TestSetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("SetConfiguration",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 					model.Attributes{
 						{
 							Key:   "key0",
@@ -222,38 +222,6 @@ func TestSetConfiguration(t *testing.T) {
 		},
 
 		{
-			Name: "error bad request not a valid device id",
-
-			Request: func() *http.Request {
-				body, _ := json.Marshal(map[string]interface{}{
-					"configured": []map[string]interface{}{
-						{
-							"key":   "key0",
-							"value": "value0",
-						},
-					},
-				})
-
-				repl := strings.NewReplacer(
-					":device_id", "id",
-				)
-				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					bytes.NewReader(body),
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				return app
-			}(),
-			Status: http.StatusBadRequest,
-		},
-
-		{
 			Name: "error bad request not a valid json in body",
 
 			Request: func() *http.Request {
@@ -305,7 +273,7 @@ func TestSetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("SetConfiguration",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 					model.Attributes{
 						{
 							Key:   "key0",
@@ -414,7 +382,7 @@ func TestGetConfiguration(t *testing.T) {
 	t.Parallel()
 
 	device := model.Device{
-		ID: uuid.New(),
+		ID: uuid.New().String(),
 		ConfiguredAttributes: []model.Attribute{
 			{
 				Key:   "key0",
@@ -471,7 +439,7 @@ func TestGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(device, nil)
 				return app
 			}(),
@@ -550,29 +518,6 @@ func TestGetConfiguration(t *testing.T) {
 		},
 
 		{
-			Name: "error bad request not a valid device id",
-
-			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", "id",
-				)
-				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					nil,
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				return app
-			}(),
-			Status: http.StatusBadRequest,
-		},
-
-		{
 			Name: "error device not found",
 
 			Request: func() *http.Request {
@@ -594,7 +539,7 @@ func TestGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(device, store.ErrDeviceNoExist)
 				return app
 			}(),
@@ -623,7 +568,7 @@ func TestGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(device, errors.New("some other error"))
 				return app
 			}(),
@@ -652,7 +597,7 @@ func TestGetConfiguration(t *testing.T) {
 				app := new(mapp.App)
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(device, nil)
 				app.On("AreDevicesInGroup",
 					contextMatcher,
@@ -752,7 +697,7 @@ func TestGetConfiguration(t *testing.T) {
 func TestDeployConfiguration(t *testing.T) {
 	t.Parallel()
 
-	deviceID := uuid.New()
+	deviceID := uuid.New().String()
 
 	testCases := map[string]struct {
 		deviceID                string
@@ -769,7 +714,7 @@ func TestDeployConfiguration(t *testing.T) {
 		status                  int
 	}{
 		"ok": {
-			deviceID: deviceID.String(),
+			deviceID: deviceID,
 			device: model.Device{
 				ID: deviceID,
 				ConfiguredAttributes: []model.Attribute{
@@ -804,7 +749,7 @@ func TestDeployConfiguration(t *testing.T) {
 			status:                  200,
 		},
 		"ko, error in DeployConfiguration": {
-			deviceID: deviceID.String(),
+			deviceID: deviceID,
 			device: model.Device{
 				ID: deviceID,
 				ConfiguredAttributes: []model.Attribute{
@@ -836,25 +781,21 @@ func TestDeployConfiguration(t *testing.T) {
 			callDeployConfiguration: true,
 			status:                  500,
 		},
-		"ko, device ID not valid": {
-			deviceID: "dummy",
-			status:   400,
-		},
 		"ko, device not found": {
-			deviceID:      deviceID.String(),
+			deviceID:      deviceID,
 			getDeviceErr:  store.ErrDeviceNoExist,
 			callGetDevice: true,
 			status:        404,
 		},
 		"ko, error in GetDevice": {
-			deviceID:      deviceID.String(),
+			deviceID:      deviceID,
 			requestBody:   "",
 			getDeviceErr:  errors.New("generic error"),
 			callGetDevice: true,
 			status:        500,
 		},
 		"ko, bad request body": {
-			deviceID:    deviceID.String(),
+			deviceID:    deviceID,
 			requestBody: "",
 			device: model.Device{
 				ID: deviceID,
@@ -885,7 +826,7 @@ func TestDeployConfiguration(t *testing.T) {
 			status:        400,
 		},
 		"ok, rbac": {
-			deviceID: deviceID.String(),
+			deviceID: deviceID,
 			device: model.Device{
 				ID: deviceID,
 				ConfiguredAttributes: []model.Attribute{
@@ -922,7 +863,7 @@ func TestDeployConfiguration(t *testing.T) {
 			status:                  http.StatusOK,
 		},
 		"rbac: forbidden": {
-			deviceID: deviceID.String(),
+			deviceID: deviceID,
 			device: model.Device{
 				ID: deviceID,
 				ConfiguredAttributes: []model.Attribute{
@@ -957,7 +898,7 @@ func TestDeployConfiguration(t *testing.T) {
 			status:               http.StatusForbidden,
 		},
 		"rbac: app error": {
-			deviceID: deviceID.String(),
+			deviceID: deviceID,
 			device: model.Device{
 				ID: deviceID,
 				ConfiguredAttributes: []model.Attribute{
@@ -999,7 +940,7 @@ func TestDeployConfiguration(t *testing.T) {
 			if tc.callGetDevice {
 				app.On("GetDevice",
 					contextMatcher,
-					mock.AnythingOfType("uuid.UUID"),
+					mock.AnythingOfType("string"),
 				).Return(tc.device, tc.getDeviceErr)
 			}
 

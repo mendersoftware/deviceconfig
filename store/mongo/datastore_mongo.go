@@ -215,7 +215,7 @@ func (db *MongoStore) UpsertReportedConfiguration(ctx context.Context, dev model
 	return errors.Wrap(err, "mongo: failed to store device reported configuration")
 }
 
-func (db *MongoStore) SetDeploymentID(ctx context.Context, devID uuid.UUID,
+func (db *MongoStore) SetDeploymentID(ctx context.Context, devID string,
 	deploymentID uuid.UUID) error {
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
@@ -242,7 +242,7 @@ func (db *MongoStore) SetDeploymentID(ctx context.Context, devID uuid.UUID,
 	return nil
 }
 
-func (db *MongoStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {
+func (db *MongoStore) DeleteDevice(ctx context.Context, devID string) error {
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
 	fltr := bson.D{{
@@ -257,7 +257,7 @@ func (db *MongoStore) DeleteDevice(ctx context.Context, devID uuid.UUID) error {
 	return errors.Wrap(err, "mongo: failed to delete device configuration")
 }
 
-func (db *MongoStore) GetDevice(ctx context.Context, devID uuid.UUID) (model.Device, error) {
+func (db *MongoStore) GetDevice(ctx context.Context, devID string) (model.Device, error) {
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
 	fltr := bson.D{{

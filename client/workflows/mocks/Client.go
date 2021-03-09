@@ -45,11 +45,11 @@ func (_m *Client) CheckHealth(ctx context.Context) error {
 }
 
 // DeployConfiguration provides a mock function with given fields: ctx, tenantID, deviceID, deploymentID, configuration, retries
-func (_m *Client) DeployConfiguration(ctx context.Context, tenantID string, deviceID uuid.UUID, deploymentID uuid.UUID, configuration []byte, retries uint) error {
+func (_m *Client) DeployConfiguration(ctx context.Context, tenantID string, deviceID string, deploymentID uuid.UUID, configuration []byte, retries uint) error {
 	ret := _m.Called(ctx, tenantID, deviceID, deploymentID, configuration, retries)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, uuid.UUID, uuid.UUID, []byte, uint) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, uuid.UUID, []byte, uint) error); ok {
 		r0 = rf(ctx, tenantID, deviceID, deploymentID, configuration, retries)
 	} else {
 		r0 = ret.Error(0)

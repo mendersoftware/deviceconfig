@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
 	"github.com/pkg/errors"
@@ -50,16 +49,8 @@ func (api *DevicesAPI) SetConfiguration(c *gin.Context) {
 		return
 	}
 
-	devID, err := uuid.Parse(identity.Subject)
-	if err != nil {
-		rest.RenderError(c,
-			http.StatusBadRequest,
-			errors.Wrap(err, "malformed device ID"),
-		)
-		return
-	}
-
-	err = c.ShouldBindJSON(&configuration)
+	devID := identity.Subject
+	err := c.ShouldBindJSON(&configuration)
 	if err != nil {
 		rest.RenderError(c,
 			http.StatusBadRequest,
@@ -98,15 +89,7 @@ func (api *DevicesAPI) GetConfiguration(c *gin.Context) {
 		return
 	}
 
-	devID, err := uuid.Parse(identity.Subject)
-	if err != nil {
-		rest.RenderError(c,
-			http.StatusBadRequest,
-			errors.Wrap(err, "malformed device ID"),
-		)
-		return
-	}
-
+	devID := identity.Subject
 	device, err := api.App.GetDevice(ctx, devID)
 	if err != nil {
 		switch cause := errors.Cause(err); cause {
