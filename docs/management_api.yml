@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Device Configure Management API
+  title: Device configure
   description: |
     API for managing device configuration.
     Intended for use by the web GUI

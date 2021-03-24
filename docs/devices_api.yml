@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Device Configure Devices API
+  title: Device configure
   description: |
     Device facing API for managing persistent device connections.
 
