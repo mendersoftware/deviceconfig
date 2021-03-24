@@ -16,12 +16,12 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/operation"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
@@ -132,29 +132,6 @@ func (iv IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 	return cursor, replaceErrors(err)
 }
 
-// ListSpecifications executes a List command and returns a slice of returned IndexSpecifications
-func (iv IndexView) ListSpecifications(ctx context.Context, opts ...*options.ListIndexesOptions) ([]*IndexSpecification, error) {
-	cursor, err := iv.List(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*IndexSpecification
-	err = cursor.All(ctx, &results)
-	if err != nil {
-		return nil, err
-	}
-
-	ns := iv.coll.db.Name() + "." + iv.coll.Name()
-	for _, res := range results {
-		// Pre-4.4 servers report a namespace in their responses, so we only set Namespace manually if it was not in
-		// the response.
-		res.Namespace = ns
-	}
-
-	return results, nil
-}
-
 // CreateOne executes a createIndexes command to create an index on the collection and returns the name of the new
 // index. See the IndexView.CreateMany documentation for more information and an example.
 func (iv IndexView) CreateOne(ctx context.Context, model IndexModel, opts ...*options.CreateIndexesOptions) (string, error) {
@@ -187,7 +164,7 @@ func (iv IndexView) CreateMany(ctx context.Context, models []IndexModel, opts ..
 			return nil, fmt.Errorf("index model keys cannot be nil")
 		}
 
-		keys, err := transformBsoncoreDocument(iv.coll.registry, model.Keys, false, "keys")
+		keys, err := transformBsoncoreDocument(iv.coll.registry, model.Keys)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +239,7 @@ func (iv IndexView) CreateMany(ctx context.Context, models []IndexModel, opts ..
 		op.MaxTimeMS(int64(*option.MaxTime / time.Millisecond))
 	}
 	if option.CommitQuorum != nil {
-		commitQuorum, err := transformValue(iv.coll.registry, option.CommitQuorum, true, "commitQuorum")
+		commitQuorum, err := transformValue(iv.coll.registry, option.CommitQuorum)
 		if err != nil {
 			return nil, err
 		}
@@ -293,7 +270,7 @@ func (iv IndexView) createOptionsDoc(opts *options.IndexOptions) (bsoncore.Docum
 		optsDoc = bsoncore.AppendBooleanElement(optsDoc, "sparse", *opts.Sparse)
 	}
 	if opts.StorageEngine != nil {
-		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.StorageEngine, true, "storageEngine")
+		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.StorageEngine)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +293,7 @@ func (iv IndexView) createOptionsDoc(opts *options.IndexOptions) (bsoncore.Docum
 		optsDoc = bsoncore.AppendInt32Element(optsDoc, "textIndexVersion", *opts.TextVersion)
 	}
 	if opts.Weights != nil {
-		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.Weights, true, "weights")
+		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.Weights)
 		if err != nil {
 			return nil, err
 		}
@@ -339,7 +316,7 @@ func (iv IndexView) createOptionsDoc(opts *options.IndexOptions) (bsoncore.Docum
 		optsDoc = bsoncore.AppendInt32Element(optsDoc, "bucketSize", *opts.BucketSize)
 	}
 	if opts.PartialFilterExpression != nil {
-		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.PartialFilterExpression, true, "partialFilterExpression")
+		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.PartialFilterExpression)
 		if err != nil {
 			return nil, err
 		}
@@ -350,7 +327,7 @@ func (iv IndexView) createOptionsDoc(opts *options.IndexOptions) (bsoncore.Docum
 		optsDoc = bsoncore.AppendDocumentElement(optsDoc, "collation", bsoncore.Document(opts.Collation.ToDocument()))
 	}
 	if opts.WildcardProjection != nil {
-		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.WildcardProjection, true, "wildcardProjection")
+		doc, err := transformBsoncoreDocument(iv.coll.registry, opts.WildcardProjection)
 		if err != nil {
 			return nil, err
 		}

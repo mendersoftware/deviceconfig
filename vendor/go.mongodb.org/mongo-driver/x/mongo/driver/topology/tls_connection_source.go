@@ -11,26 +11,16 @@ import (
 	"net"
 )
 
-type tlsConn interface {
-	net.Conn
-	Handshake() error
-	ConnectionState() tls.ConnectionState
-}
-
-var _ tlsConn = (*tls.Conn)(nil)
-
 type tlsConnectionSource interface {
-	Client(net.Conn, *tls.Config) tlsConn
+	Client(net.Conn, *tls.Config) *tls.Conn
 }
 
-type tlsConnectionSourceFn func(net.Conn, *tls.Config) tlsConn
+type tlsConnectionSourceFn func(net.Conn, *tls.Config) *tls.Conn
 
-var _ tlsConnectionSource = (tlsConnectionSourceFn)(nil)
-
-func (t tlsConnectionSourceFn) Client(nc net.Conn, cfg *tls.Config) tlsConn {
+func (t tlsConnectionSourceFn) Client(nc net.Conn, cfg *tls.Config) *tls.Conn {
 	return t(nc, cfg)
 }
 
-var defaultTLSConnectionSource tlsConnectionSourceFn = func(nc net.Conn, cfg *tls.Config) tlsConn {
+var defaultTLSConnectionSource tlsConnectionSourceFn = func(nc net.Conn, cfg *tls.Config) *tls.Conn {
 	return tls.Client(nc, cfg)
 }

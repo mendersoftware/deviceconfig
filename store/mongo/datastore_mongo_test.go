@@ -124,7 +124,7 @@ func TestNewMongoStore(t *testing.T) {
 			}(),
 			TLSConfig: &tls.Config{},
 		},
-		Error: errors.New("^mongo: error reaching mongo server:.*" +
+		Error: errors.New("^mongo: error reaching mongo server: " +
 			context.Canceled.Error(),
 		),
 	}}

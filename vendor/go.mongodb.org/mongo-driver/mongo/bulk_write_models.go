@@ -70,8 +70,7 @@ func (dom *DeleteOneModel) SetCollation(collation *options.Collation) *DeleteOne
 // specification as a document. This option is only valid for MongoDB versions >= 4.4. Server versions >= 3.4 will
 // return an error if this option is specified. For server versions < 3.4, the driver will return a client-side error if
 // this option is specified. The driver will return an error if this option is specified during an unacknowledged write
-// operation. The driver will return an error if the hint parameter is a multi-key map. The default value is nil, which
-// means that no hint will be sent.
+// operation. The default value is nil, which means that no hint will be sent.
 func (dom *DeleteOneModel) SetHint(hint interface{}) *DeleteOneModel {
 	dom.Hint = hint
 	return dom
@@ -109,8 +108,7 @@ func (dmm *DeleteManyModel) SetCollation(collation *options.Collation) *DeleteMa
 // specification as a document. This option is only valid for MongoDB versions >= 4.4. Server versions >= 3.4 will
 // return an error if this option is specified. For server versions < 3.4, the driver will return a client-side error if
 // this option is specified. The driver will return an error if this option is specified during an unacknowledged write
-// operation. The driver will return an error if the hint parameter is a multi-key map. The default value is nil, which
-// means that no hint will be sent.
+// operation. The default value is nil, which means that no hint will be sent.
 func (dmm *DeleteManyModel) SetHint(hint interface{}) *DeleteManyModel {
 	dmm.Hint = hint
 	return dmm
@@ -136,8 +134,7 @@ func NewReplaceOneModel() *ReplaceOneModel {
 // specification as a document. This option is only valid for MongoDB versions >= 4.2. Server versions >= 3.4 will
 // return an error if this option is specified. For server versions < 3.4, the driver will return a client-side error if
 // this option is specified. The driver will return an error if this option is specified during an unacknowledged write
-// operation. The driver will return an error if the hint parameter is a multi-key map. The default value is nil, which
-// means that no hint will be sent.
+// operation. The default value is nil, which means that no hint will be sent.
 func (rom *ReplaceOneModel) SetHint(hint interface{}) *ReplaceOneModel {
 	rom.Hint = hint
 	return rom
@@ -194,8 +191,7 @@ func NewUpdateOneModel() *UpdateOneModel {
 // specification as a document. This option is only valid for MongoDB versions >= 4.2. Server versions >= 3.4 will
 // return an error if this option is specified. For server versions < 3.4, the driver will return a client-side error if
 // this option is specified. The driver will return an error if this option is specified during an unacknowledged write
-// operation. The driver will return an error if the hint parameter is a multi-key map. The default value is nil, which
-// means that no hint will be sent.
+// operation. The default value is nil, which means that no hint will be sent.
 func (uom *UpdateOneModel) SetHint(hint interface{}) *UpdateOneModel {
 	uom.Hint = hint
 	return uom
@@ -259,8 +255,7 @@ func NewUpdateManyModel() *UpdateManyModel {
 // specification as a document. This option is only valid for MongoDB versions >= 4.2. Server versions >= 3.4 will
 // return an error if this option is specified. For server versions < 3.4, the driver will return a client-side error if
 // this option is specified. The driver will return an error if this option is specified during an unacknowledged write
-// operation. The driver will return an error if the hint parameter is a multi-key map. The default value is nil, which
-// means that no hint will be sent.
+// operation. The default value is nil, which means that no hint will be sent.
 func (umm *UpdateManyModel) SetHint(hint interface{}) *UpdateManyModel {
 	umm.Hint = hint
 	return umm

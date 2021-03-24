@@ -42,7 +42,6 @@ type connectionConfig struct {
 	handshaker               Handshaker
 	idleTimeout              time.Duration
 	cmdMonitor               *event.CommandMonitor
-	poolMonitor              *event.PoolMonitor
 	readTimeout              time.Duration
 	writeTimeout             time.Duration
 	tlsConfig                *tls.Config
@@ -70,7 +69,7 @@ func newConnectionConfig(opts ...ConnectionOption) (*connectionConfig, error) {
 	}
 
 	if cfg.dialer == nil {
-		cfg.dialer = &net.Dialer{}
+		cfg.dialer = &net.Dialer{Timeout: cfg.connectTimeout}
 	}
 
 	return cfg, nil
@@ -163,14 +162,6 @@ func WithTLSConfig(fn func(*tls.Config) *tls.Config) ConnectionOption {
 func WithMonitor(fn func(*event.CommandMonitor) *event.CommandMonitor) ConnectionOption {
 	return func(c *connectionConfig) error {
 		c.cmdMonitor = fn(c.cmdMonitor)
-		return nil
-	}
-}
-
-// withPoolMonitor configures a event for connection monitoring.
-func withPoolMonitor(fn func(*event.PoolMonitor) *event.PoolMonitor) ConnectionOption {
-	return func(c *connectionConfig) error {
-		c.poolMonitor = fn(c.poolMonitor)
 		return nil
 	}
 }

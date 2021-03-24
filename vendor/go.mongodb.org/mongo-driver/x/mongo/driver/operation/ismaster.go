@@ -7,13 +7,11 @@ import (
 	"runtime"
 	"strconv"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/internal"
-	"go.mongodb.org/mongo-driver/mongo/address"
-	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/version"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/address"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -91,7 +89,7 @@ func (im *IsMaster) MaxAwaitTimeMS(awaitTime int64) *IsMaster {
 
 // Result returns the result of executing this operation.
 func (im *IsMaster) Result(addr address.Address) description.Server {
-	return description.NewServer(addr, bson.Raw(im.res))
+	return description.NewServer(addr, im.res)
 }
 
 func (im *IsMaster) decodeStringSlice(element bsoncore.Element, name string) ([]string, error) {
@@ -225,9 +223,9 @@ func (im *IsMaster) createOperation() driver.Operation {
 	}
 }
 
-// GetHandshakeInformation performs the MongoDB handshake for the provided connection and returns the relevant
-// information about the server. This function implements the driver.Handshaker interface.
-func (im *IsMaster) GetHandshakeInformation(ctx context.Context, _ address.Address, c driver.Connection) (driver.HandshakeInformation, error) {
+// GetDescription retrieves the server description for the given connection. This function implements the Handshaker
+// interface.
+func (im *IsMaster) GetDescription(ctx context.Context, _ address.Address, c driver.Connection) (description.Server, error) {
 	err := driver.Operation{
 		Clock:      im.clock,
 		CommandFn:  im.handshakeCommand,
@@ -239,21 +237,9 @@ func (im *IsMaster) GetHandshakeInformation(ctx context.Context, _ address.Addre
 		},
 	}.Execute(ctx, nil)
 	if err != nil {
-		return driver.HandshakeInformation{}, err
+		return description.Server{}, err
 	}
-
-	info := driver.HandshakeInformation{
-		Description: im.Result(c.Address()),
-	}
-	if speculativeAuthenticate, ok := im.res.Lookup("speculativeAuthenticate").DocumentOK(); ok {
-		info.SpeculativeAuthenticate = speculativeAuthenticate
-	}
-	// Cast to bson.Raw to lookup saslSupportedMechs to avoid converting from bsoncore.Value to bson.RawValue for the
-	// StringSliceFromRawValue call.
-	if saslSupportedMechs, lookupErr := bson.Raw(im.res).LookupErr("saslSupportedMechs"); lookupErr == nil {
-		info.SaslSupportedMechs, err = internal.StringSliceFromRawValue("saslSupportedMechs", saslSupportedMechs)
-	}
-	return info, err
+	return im.Result(c.Address()), nil
 }
 
 // FinishHandshake implements the Handshaker interface. This is a no-op function because a non-authenticated connection

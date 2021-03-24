@@ -13,7 +13,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -21,6 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/operation"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
@@ -153,7 +153,7 @@ func (db *Database) processRunCommand(ctx context.Context, cmd interface{},
 		return nil, sess, errors.New("read preference in a transaction must be primary")
 	}
 
-	runCmdDoc, err := transformBsoncoreDocument(db.registry, cmd, false, "cmd")
+	runCmdDoc, err := transformBsoncoreDocument(db.registry, cmd)
 	if err != nil {
 		return nil, sess, err
 	}
@@ -162,14 +162,14 @@ func (db *Database) processRunCommand(ctx context.Context, cmd interface{},
 		description.LatencySelector(db.client.localThreshold),
 	})
 	if sess != nil && sess.PinnedServer != nil {
-		readSelect = makePinnedSelector(sess, readSelect)
+		readSelect = sess.PinnedServer
 	}
 
 	return operation.NewCommand(runCmdDoc).
 		Session(sess).CommandMonitor(db.client.monitor).
 		ServerSelector(readSelect).ClusterClock(db.client.clock).
 		Database(db.name).Deployment(db.client.deployment).ReadConcern(db.readConcern).
-		Crypt(db.client.cryptFLE).ReadPreference(ro.ReadPreference), sess, nil
+		Crypt(db.client.crypt).ReadPreference(ro.ReadPreference), sess, nil
 }
 
 // RunCommand executes the given command against the database. This function does not obey the Database's read
@@ -271,7 +271,7 @@ func (db *Database) Drop(ctx context.Context) error {
 	op := operation.NewDropDatabase().
 		Session(sess).WriteConcern(wc).CommandMonitor(db.client.monitor).
 		ServerSelector(selector).ClusterClock(db.client.clock).
-		Database(db.name).Deployment(db.client.deployment).Crypt(db.client.cryptFLE)
+		Database(db.name).Deployment(db.client.deployment).Crypt(db.client.crypt)
 
 	err = op.Execute(ctx)
 
@@ -280,41 +280,6 @@ func (db *Database) Drop(ctx context.Context) error {
 		return replaceErrors(err)
 	}
 	return nil
-}
-
-// ListCollectionSpecifications executes a listCollections command and returns a slice of CollectionSpecification
-// instances representing the collections in the database.
-//
-// The filter parameter must be a document containing query operators and can be used to select which collections
-// are included in the result. It cannot be nil. An empty document (e.g. bson.D{}) should be used to include all
-// collections.
-//
-// The opts parameter can be used to specify options for the operation (see the options.ListCollectionsOptions
-// documentation).
-//
-// For more information about the command, see https://docs.mongodb.com/manual/reference/command/listCollections/.
-func (db *Database) ListCollectionSpecifications(ctx context.Context, filter interface{},
-	opts ...*options.ListCollectionsOptions) ([]*CollectionSpecification, error) {
-
-	cursor, err := db.ListCollections(ctx, filter, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	var specs []*CollectionSpecification
-	err = cursor.All(ctx, &specs)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, spec := range specs {
-		// Pre-4.4 servers report a namespace in their responses, so we only set Namespace manually if it was not in
-		// the response.
-		if spec.IDIndex != nil && spec.IDIndex.Namespace == "" {
-			spec.IDIndex.Namespace = db.name + "." + spec.Name
-		}
-	}
-	return specs, nil
 }
 
 // ListCollections executes a listCollections command and returns a cursor over the collections in the database.
@@ -332,7 +297,7 @@ func (db *Database) ListCollections(ctx context.Context, filter interface{}, opt
 		ctx = context.Background()
 	}
 
-	filterDoc, err := transformBsoncoreDocument(db.registry, filter, true, "filter")
+	filterDoc, err := transformBsoncoreDocument(db.registry, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -361,14 +326,10 @@ func (db *Database) ListCollections(ctx context.Context, filter interface{}, opt
 	op := operation.NewListCollections(filterDoc).
 		Session(sess).ReadPreference(db.readPreference).CommandMonitor(db.client.monitor).
 		ServerSelector(selector).ClusterClock(db.client.clock).
-		Database(db.name).Deployment(db.client.deployment).Crypt(db.client.cryptFLE)
+		Database(db.name).Deployment(db.client.deployment).Crypt(db.client.crypt)
 	if lco.NameOnly != nil {
 		op = op.NameOnly(*lco.NameOnly)
 	}
-	if lco.BatchSize != nil {
-		op = op.BatchSize(*lco.BatchSize)
-	}
-
 	retry := driver.RetryNone
 	if db.client.retryReads {
 		retry = driver.RetryOncePerCommand
@@ -381,7 +342,7 @@ func (db *Database) ListCollections(ctx context.Context, filter interface{}, opt
 		return nil, replaceErrors(err)
 	}
 
-	bc, err := op.Result(driver.CursorOptions{Crypt: db.client.cryptFLE})
+	bc, err := op.Result(driver.CursorOptions{Crypt: db.client.crypt})
 	if err != nil {
 		closeImplicitSession(sess)
 		return nil, replaceErrors(err)
@@ -474,7 +435,7 @@ func (db *Database) Watch(ctx context.Context, pipeline interface{},
 		registry:       db.registry,
 		streamType:     DatabaseStream,
 		databaseName:   db.Name(),
-		crypt:          db.client.cryptFLE,
+		crypt:          db.client.crypt,
 	}
 	return newChangeStream(ctx, csConfig, pipeline, opts...)
 }
@@ -498,7 +459,7 @@ func (db *Database) CreateCollection(ctx context.Context, name string, opts ...*
 	if cco.DefaultIndexOptions != nil {
 		idx, doc := bsoncore.AppendDocumentStart(nil)
 		if cco.DefaultIndexOptions.StorageEngine != nil {
-			storageEngine, err := transformBsoncoreDocument(db.registry, cco.DefaultIndexOptions.StorageEngine, true, "storageEngine")
+			storageEngine, err := transformBsoncoreDocument(db.registry, cco.DefaultIndexOptions.StorageEngine)
 			if err != nil {
 				return err
 			}
@@ -519,7 +480,7 @@ func (db *Database) CreateCollection(ctx context.Context, name string, opts ...*
 		op.Size(*cco.SizeInBytes)
 	}
 	if cco.StorageEngine != nil {
-		storageEngine, err := transformBsoncoreDocument(db.registry, cco.StorageEngine, true, "storageEngine")
+		storageEngine, err := transformBsoncoreDocument(db.registry, cco.StorageEngine)
 		if err != nil {
 			return err
 		}
@@ -532,7 +493,7 @@ func (db *Database) CreateCollection(ctx context.Context, name string, opts ...*
 		op.ValidationLevel(*cco.ValidationLevel)
 	}
 	if cco.Validator != nil {
-		validator, err := transformBsoncoreDocument(db.registry, cco.Validator, true, "validator")
+		validator, err := transformBsoncoreDocument(db.registry, cco.Validator)
 		if err != nil {
 			return err
 		}
@@ -606,7 +567,7 @@ func (db *Database) executeCreateOperation(ctx context.Context, op *operation.Cr
 		ClusterClock(db.client.clock).
 		Database(db.name).
 		Deployment(db.client.deployment).
-		Crypt(db.client.cryptFLE)
+		Crypt(db.client.crypt)
 
 	return replaceErrors(op.Execute(ctx))
 }

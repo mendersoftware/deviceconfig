@@ -8,7 +8,6 @@ package mongo
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -42,18 +41,14 @@ func NewClientEncryption(keyVaultClient *Client, opts ...*options.ClientEncrypti
 	db, coll := splitNamespace(ceo.KeyVaultNamespace)
 	ce.keyVaultColl = ce.keyVaultClient.Database(db).Collection(coll, keyVaultCollOpts)
 
-	kmsProviders, err := transformBsoncoreDocument(bson.DefaultRegistry, ceo.KmsProviders, true, "kmsProviders")
-	if err != nil {
-		return nil, fmt.Errorf("error creating KMS providers map: %v", err)
-	}
-
 	// create Crypt
+	var err error
 	kr := keyRetriever{coll: ce.keyVaultColl}
 	cir := collInfoRetriever{client: ce.keyVaultClient}
 	ce.crypt, err = driver.NewCrypt(&driver.CryptOptions{
 		KeyFn:        kr.cryptKeys,
 		CollInfoFn:   cir.cryptCollInfo,
-		KmsProviders: kmsProviders,
+		KmsProviders: ceo.KmsProviders,
 	})
 	if err != nil {
 		return nil, err
@@ -69,7 +64,7 @@ func (ce *ClientEncryption) CreateDataKey(ctx context.Context, kmsProvider strin
 	dko := options.MergeDataKeyOptions(opts...)
 	co := cryptOpts.DataKey().SetKeyAltNames(dko.KeyAltNames)
 	if dko.MasterKey != nil {
-		keyDoc, err := transformBsoncoreDocument(ce.keyVaultClient.registry, dko.MasterKey, true, "masterKey")
+		keyDoc, err := transformBsoncoreDocument(ce.keyVaultClient.registry, dko.MasterKey)
 		if err != nil {
 			return primitive.Binary{}, err
 		}

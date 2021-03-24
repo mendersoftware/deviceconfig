@@ -38,7 +38,7 @@ type CryptOptions struct {
 	CollInfoFn           CollectionInfoFn
 	KeyFn                KeyRetrieverFn
 	MarkFn               MarkCommandFn
-	KmsProviders         bsoncore.Document
+	KmsProviders         map[string]map[string]interface{}
 	SchemaMap            map[string]bsoncore.Document
 	BypassAutoEncryption bool
 }
@@ -62,9 +62,7 @@ func NewCrypt(opts *CryptOptions) (*Crypt, error) {
 		markFn:               opts.MarkFn,
 		BypassAutoEncryption: opts.BypassAutoEncryption,
 	}
-
-	mongocryptOpts := options.MongoCrypt().SetKmsProviders(opts.KmsProviders).SetLocalSchemaMap(opts.SchemaMap)
-	mc, err := mongocrypt.NewMongoCrypt(mongocryptOpts)
+	mc, err := mongocrypt.NewMongoCrypt(createMongoCryptOptions(opts))
 	if err != nil {
 		return nil, err
 	}
@@ -298,4 +296,38 @@ func (c *Crypt) decryptKey(ctx context.Context, kmsCtx *mongocrypt.KmsContext) e
 			return err
 		}
 	}
+}
+
+func createMongoCryptOptions(opts *CryptOptions) *options.MongoCryptOptions {
+	mcOpts := options.MongoCrypt().SetLocalSchemaMap(opts.SchemaMap)
+	// KMS providers options
+	for provider, providerOpts := range opts.KmsProviders {
+		switch provider {
+		case "aws":
+			awsOpts := options.AwsKmsProvider()
+
+			if accessKey, ok := providerOpts["accessKeyId"]; ok {
+				if keyStr, ok := accessKey.(string); ok {
+					awsOpts.SetAccessKeyID(keyStr)
+				}
+			}
+			if secretAccessKey, ok := providerOpts["secretAccessKey"]; ok {
+				if keyStr, ok := secretAccessKey.(string); ok {
+					awsOpts.SetSecretAccessKey(keyStr)
+				}
+			}
+			mcOpts.SetAwsProviderOptions(awsOpts)
+		case "local":
+			localOpts := options.LocalKmsProvider()
+
+			if key, ok := providerOpts["key"]; ok {
+				if keyBytes, ok := key.([]byte); ok {
+					localOpts.SetMasterKey(keyBytes)
+				}
+			}
+			mcOpts.SetLocalProviderOptions(localOpts)
+		}
+	}
+
+	return mcOpts
 }

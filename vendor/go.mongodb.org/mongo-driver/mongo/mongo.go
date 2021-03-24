@@ -188,14 +188,14 @@ func transformDocument(registry *bsoncodec.Registry, val interface{}) (bsonx.Doc
 	if doc, ok := val.(bsonx.Doc); ok {
 		return doc.Copy(), nil
 	}
-	b, err := transformBsoncoreDocument(registry, val, true, "document")
+	b, err := transformBsoncoreDocument(registry, val)
 	if err != nil {
 		return nil, err
 	}
 	return bsonx.ReadDoc(b)
 }
 
-func transformBsoncoreDocument(registry *bsoncodec.Registry, val interface{}, mapAllowed bool, paramName string) (bsoncore.Document, error) {
+func transformBsoncoreDocument(registry *bsoncodec.Registry, val interface{}) (bsoncore.Document, error) {
 	if registry == nil {
 		registry = bson.DefaultRegistry
 	}
@@ -205,12 +205,6 @@ func transformBsoncoreDocument(registry *bsoncodec.Registry, val interface{}, ma
 	if bs, ok := val.([]byte); ok {
 		// Slight optimization so we'll just use MarshalBSON and not go through the codec machinery.
 		val = bson.Raw(bs)
-	}
-	if !mapAllowed {
-		refValue := reflect.ValueOf(val)
-		if refValue.Kind() == reflect.Map && refValue.Len() > 1 {
-			return nil, ErrMapForOrderedArgument{paramName}
-		}
 	}
 
 	// TODO(skriptble): Use a pool of these instead.
@@ -332,7 +326,7 @@ func transformAggregatePipelinev2(registry *bsoncodec.Registry, pipeline interfa
 		var hasOutputStage bool
 		valLen := val.Len()
 		for idx := 0; idx < valLen; idx++ {
-			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface(), true, fmt.Sprintf("pipeline stage :%v", idx))
+			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface())
 			if err != nil {
 				return nil, false, err
 			}
@@ -362,7 +356,7 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, doll
 		return u, ErrNilDocument
 	case primitive.D, bsonx.Doc:
 		u.Type = bsontype.EmbeddedDocument
-		u.Data, err = transformBsoncoreDocument(registry, update, true, "update")
+		u.Data, err = transformBsoncoreDocument(registry, update)
 		if err != nil {
 			return u, err
 		}
@@ -404,7 +398,7 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, doll
 		}
 		if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
 			u.Type = bsontype.EmbeddedDocument
-			u.Data, err = transformBsoncoreDocument(registry, update, true, "update")
+			u.Data, err = transformBsoncoreDocument(registry, update)
 			if err != nil {
 				return u, err
 			}
@@ -416,7 +410,7 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, doll
 		aidx, arr := bsoncore.AppendArrayStart(nil)
 		valLen := val.Len()
 		for idx := 0; idx < valLen; idx++ {
-			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface(), true, "update")
+			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface())
 			if err != nil {
 				return u, err
 			}
@@ -432,19 +426,12 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, doll
 	}
 }
 
-func transformValue(registry *bsoncodec.Registry, val interface{}, mapAllowed bool, paramName string) (bsoncore.Value, error) {
+func transformValue(registry *bsoncodec.Registry, val interface{}) (bsoncore.Value, error) {
 	if registry == nil {
 		registry = bson.DefaultRegistry
 	}
 	if val == nil {
 		return bsoncore.Value{}, ErrNilValue
-	}
-
-	if !mapAllowed {
-		refValue := reflect.ValueOf(val)
-		if refValue.Kind() == reflect.Map && refValue.Len() > 1 {
-			return bsoncore.Value{}, ErrMapForOrderedArgument{paramName}
-		}
 	}
 
 	buf := make([]byte, 0, 256)
@@ -458,7 +445,7 @@ func transformValue(registry *bsoncodec.Registry, val interface{}, mapAllowed bo
 
 // Build the aggregation pipeline for the CountDocument command.
 func countDocumentsAggregatePipeline(registry *bsoncodec.Registry, filter interface{}, opts *options.CountOptions) (bsoncore.Document, error) {
-	filterDoc, err := transformBsoncoreDocument(registry, filter, true, "filter")
+	filterDoc, err := transformBsoncoreDocument(registry, filter)
 	if err != nil {
 		return nil, err
 	}
