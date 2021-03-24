@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Device Configure Internal API
+  title: Device configure
   description: |
     Internal API for managing persistent device connections.
     Intended for use by the web GUI.
