@@ -7,7 +7,7 @@ RUN mkdir -p /go/src/github.com/mendersoftware/deviceconfig
 COPY . /go/src/github.com/mendersoftware/deviceconfig
 RUN cd /go/src/github.com/mendersoftware/deviceconfig && env CGO_ENABLED=1 go build
 
-FROM alpine:3.13.2
+FROM alpine:3.13.3
 RUN apk add --no-cache ca-certificates xz
 RUN mkdir -p /etc/deviceconfig
 COPY ./config.yaml /etc/deviceconfig

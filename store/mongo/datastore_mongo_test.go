@@ -30,6 +30,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func ptrNow() *time.Time {
+	now := time.Now()
+	return &now
+}
+
 func TestPing(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -171,13 +176,13 @@ func TestInsertDevice(t *testing.T) {
 
 		Devices: []model.Device{{
 			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
-			UpdatedTS: time.Now(),
+			UpdatedTS: ptrNow(),
 		}},
 	}, {
 		Name: "error, invalid document",
 
 		Devices: []model.Device{{
-			UpdatedTS: time.Now(),
+			UpdatedTS: ptrNow(),
 		}},
 		Error: errors.New(`^invalid device object: id: cannot be blank.$`),
 	}, {
@@ -190,21 +195,21 @@ func TestInsertDevice(t *testing.T) {
 
 		Devices: []model.Device{{
 			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
-			UpdatedTS: time.Now(),
+			UpdatedTS: ptrNow(),
 		}},
 		Error: errors.New(
 			`mongo: failed to store device configuration: .*` +
-				context.Canceled.Error() + `$`,
+				context.Canceled.Error(),
 		),
 	}, {
 		Name: "error, duplicate key",
 
 		Devices: []model.Device{{
 			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
-			UpdatedTS: time.Now(),
+			UpdatedTS: ptrNow(),
 		}, {
 			ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
-			UpdatedTS: time.Now(),
+			UpdatedTS: ptrNow(),
 		}},
 		Error: store.ErrDeviceAlreadyExists,
 	}}
@@ -269,7 +274,7 @@ func TestGetDevice(t *testing.T) {
 							Value: "value2",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 			FoundDevices: []model.Device{
@@ -287,7 +292,7 @@ func TestGetDevice(t *testing.T) {
 							Value: "value2",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 		},
@@ -310,7 +315,7 @@ func TestGetDevice(t *testing.T) {
 							Value: "value2",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 			FoundDevices: []model.Device{
@@ -327,7 +332,7 @@ func TestGetDevice(t *testing.T) {
 							Value: "value2",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 			Error: errors.New("mongo: device does not exist"),
@@ -361,8 +366,9 @@ func TestGetDevice(t *testing.T) {
 				}
 				d, err := ds.GetDevice(tc.CTX, dev.ID)
 				assert.NoError(t, err)
-				d.UpdatedTS = time.Unix(1, 0)
-				dev.UpdatedTS = time.Unix(1, 0)
+				timeVal := time.Unix(1, 0)
+				d.UpdatedTS = &timeVal
+				dev.UpdatedTS = &timeVal
 				assert.Equal(t, d, dev)
 			}
 		})
@@ -387,7 +393,7 @@ func TestUpsertConfiguration(t *testing.T) {
 			Devices: []model.Device{
 				{
 					ID:        deviceID,
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 
@@ -400,7 +406,7 @@ func TestUpsertConfiguration(t *testing.T) {
 							Value: "value0",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 		},
@@ -417,7 +423,7 @@ func TestUpsertConfiguration(t *testing.T) {
 							Value: "value0",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 
@@ -425,7 +431,7 @@ func TestUpsertConfiguration(t *testing.T) {
 				{
 					ID:                   deviceID,
 					ConfiguredAttributes: model.Attributes{},
-					UpdatedTS:            time.Now(),
+					UpdatedTS:            ptrNow(),
 				},
 			},
 		},
@@ -441,7 +447,7 @@ func TestUpsertConfiguration(t *testing.T) {
 							Value: "value0",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 
@@ -449,7 +455,7 @@ func TestUpsertConfiguration(t *testing.T) {
 				{
 					ID:                   deviceID,
 					ConfiguredAttributes: model.Attributes{},
-					UpdatedTS:            time.Now(),
+					UpdatedTS:            ptrNow(),
 				},
 			},
 
@@ -525,7 +531,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 			Devices: []model.Device{
 				{
 					ID:        deviceID,
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 
@@ -538,7 +544,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 							Value: "value0",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 		},
@@ -554,7 +560,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 							Value: "value0",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 
@@ -562,7 +568,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 				{
 					ID:                 deviceID,
 					ReportedAttributes: model.Attributes{},
-					UpdatedTS:          time.Now(),
+					UpdatedTS:          ptrNow(),
 				},
 			},
 		},
@@ -577,7 +583,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 							Value: "value0",
 						},
 					},
-					UpdatedTS: time.Now(),
+					UpdatedTS: ptrNow(),
 				},
 			},
 
@@ -585,7 +591,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 				{
 					ID:                 deviceID,
 					ReportedAttributes: model.Attributes{},
-					UpdatedTS:          time.Now(),
+					UpdatedTS:          ptrNow(),
 				},
 			},
 
@@ -648,7 +654,7 @@ func TestSetDeploymentID(t *testing.T) {
 
 	var testDevice = model.Device{
 		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
-		UpdatedTS: time.Now(),
+		UpdatedTS: ptrNow(),
 	}
 
 	testCases := []struct {
@@ -730,7 +736,7 @@ func TestDeleteDevice(t *testing.T) {
 
 	var testDevice = model.Device{
 		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
-		UpdatedTS: time.Now(),
+		UpdatedTS: ptrNow(),
 	}
 
 	testCases := []struct {
