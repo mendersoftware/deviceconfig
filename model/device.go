@@ -31,13 +31,13 @@ type Device struct {
 	// ReportedAttributes are the configuration reported by the device.
 	ReportedAttributes Attributes `bson:"reported,omitempty" json:"reported"`
 	// DeploymentID is the ID of the latest configuration deployment
-	DeploymentID uuid.UUID `bson:"deployment_id,omitempty" json:"deployment_id,omitempty"`
+	DeploymentID *uuid.UUID `bson:"deployment_id,omitempty" json:"deployment_id,omitempty"`
 
 	// UpdatedTS holds the timestamp for when the desired state changed,
 	// including when the object was created.
-	UpdatedTS time.Time `bson:"updated_ts" json:"updated_ts"`
+	UpdatedTS *time.Time `bson:"updated_ts" json:"updated_ts"`
 	// ReportTS holds the timestamp when the device last reported its' state.
-	ReportTS time.Time `bson:"reported_ts,omitempty" json:"reported_ts,omitempty"`
+	ReportTS *time.Time `bson:"reported_ts,omitempty" json:"reported_ts,omitempty"`
 }
 
 func (dev Device) Validate() error {
