@@ -32,6 +32,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func ptrNow() *time.Time {
+	now := time.Now()
+	return &now
+}
+
 func TestDevicesSetConfiguration(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -252,8 +257,8 @@ func TestDevicesGetConfiguration(t *testing.T) {
 				Value: "value2",
 			},
 		},
-		UpdatedTS: time.Now(),
-		ReportTS:  time.Now(),
+		UpdatedTS: ptrNow(),
+		ReportTS:  ptrNow(),
 	}
 
 	testCases := []struct {

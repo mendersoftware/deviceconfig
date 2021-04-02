@@ -87,7 +87,7 @@ func TestProvisionDevice(t *testing.T) {
 		if !assert.Equal(t, dev.ID, d.ID) {
 			return false
 		}
-		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+		return assert.WithinDuration(t, time.Now(), *d.UpdatedTS, time.Minute)
 	})
 
 	ds := new(mstore.DataStore)
@@ -112,7 +112,7 @@ func TestGetDevice(t *testing.T) {
 		if !assert.Equal(t, dev.ID, d.ID) {
 			return false
 		}
-		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+		return assert.WithinDuration(t, time.Now(), *d.UpdatedTS, time.Minute)
 	})
 
 	ds := new(mstore.DataStore)
@@ -169,7 +169,7 @@ func TestSetConfiguration(t *testing.T) {
 		if !assert.Equal(t, dev.ID, d.ID) {
 			return false
 		}
-		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+		return assert.WithinDuration(t, time.Now(), *d.UpdatedTS, time.Minute)
 	})
 
 	ds := new(mstore.DataStore)
@@ -250,7 +250,7 @@ func TestSetConfigurationWithAuditLogs(t *testing.T) {
 				if !assert.Equal(t, dev.ID, d.ID) {
 					return false
 				}
-				return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+				return assert.WithinDuration(t, time.Now(), *d.UpdatedTS, time.Minute)
 			})
 
 			ds := new(mstore.DataStore)
@@ -321,13 +321,13 @@ func TestSetReportedConfiguration(t *testing.T) {
 		if !assert.Equal(t, dev.ID, d.ID) {
 			return false
 		}
-		return assert.WithinDuration(t, time.Now(), d.UpdatedTS, time.Minute)
+		return assert.WithinDuration(t, time.Now(), *d.UpdatedTS, time.Minute)
 	})
 	deviceMatcherReport := mock.MatchedBy(func(d model.Device) bool {
 		if !assert.Equal(t, dev.ID, d.ID) {
 			return false
 		}
-		return assert.WithinDuration(t, time.Now(), d.ReportTS, time.Minute)
+		return assert.WithinDuration(t, time.Now(), *d.ReportTS, time.Minute)
 	})
 
 	ds := new(mstore.DataStore)
