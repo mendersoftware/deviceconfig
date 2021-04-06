@@ -95,9 +95,10 @@ func (a *app) ProvisionTenant(ctx context.Context, tenant model.NewTenant) error
 }
 
 func (a *app) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {
+	now := time.Now()
 	return a.store.InsertDevice(ctx, model.Device{
 		ID:        dev.ID,
-		UpdatedTS: time.Now(),
+		UpdatedTS: &now,
 	})
 }
 
@@ -108,10 +109,11 @@ func (a *app) DecommissionDevice(ctx context.Context, devID string) error {
 func (a *app) SetConfiguration(ctx context.Context,
 	devID string,
 	configuration model.Attributes) error {
+	now := time.Now()
 	err := a.store.UpsertConfiguration(ctx, model.Device{
 		ID:                   devID,
 		ConfiguredAttributes: configuration,
-		UpdatedTS:            time.Now(),
+		UpdatedTS:            &now,
 	})
 	if err != nil {
 		return err
@@ -148,10 +150,11 @@ func (a *app) SetConfiguration(ctx context.Context,
 func (a *app) SetReportedConfiguration(ctx context.Context,
 	devID string,
 	configuration model.Attributes) error {
+	now := time.Now()
 	return a.store.UpsertReportedConfiguration(ctx, model.Device{
 		ID:                 devID,
 		ReportedAttributes: configuration,
-		ReportTS:           time.Now(),
+		ReportTS:           &now,
 	})
 }
 

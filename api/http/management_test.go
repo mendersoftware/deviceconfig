@@ -22,7 +22,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/mendersoftware/deviceconfig/store"
 	"github.com/stretchr/testify/mock"
@@ -403,8 +402,8 @@ func TestGetConfiguration(t *testing.T) {
 				Value: "value3",
 			},
 		},
-		UpdatedTS: time.Now(),
-		ReportTS:  time.Now(),
+		UpdatedTS: ptrNow(),
+		ReportTS:  ptrNow(),
 	}
 
 	testCases := []struct {
@@ -737,8 +736,8 @@ func TestDeployConfiguration(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				UpdatedTS: time.Now(),
-				ReportTS:  time.Now(),
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
 			},
 			requestBody: "{\"retries\": 0}",
 			deployConfiguration: model.DeployConfigurationResponse{
@@ -772,8 +771,8 @@ func TestDeployConfiguration(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				UpdatedTS: time.Now(),
-				ReportTS:  time.Now(),
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
 			},
 			requestBody:             "{\"retries\": 0}",
 			deployConfigurationErr:  errors.New("generic error"),
@@ -819,8 +818,8 @@ func TestDeployConfiguration(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				UpdatedTS: time.Now(),
-				ReportTS:  time.Now(),
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
 			},
 			callGetDevice: true,
 			status:        400,
@@ -849,8 +848,8 @@ func TestDeployConfiguration(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				UpdatedTS: time.Now(),
-				ReportTS:  time.Now(),
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
 			},
 			requestBody: "{\"retries\": 0}",
 			deployConfiguration: model.DeployConfigurationResponse{
@@ -886,8 +885,8 @@ func TestDeployConfiguration(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				UpdatedTS: time.Now(),
-				ReportTS:  time.Now(),
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
 			},
 			requestBody: "{\"retries\": 0}",
 			deployConfiguration: model.DeployConfigurationResponse{
@@ -921,8 +920,8 @@ func TestDeployConfiguration(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				UpdatedTS: time.Now(),
-				ReportTS:  time.Now(),
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
 			},
 			requestBody: "{\"retries\": 0}",
 			deployConfiguration: model.DeployConfigurationResponse{

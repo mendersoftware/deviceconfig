@@ -35,6 +35,8 @@ func TestDeviceValidate(t *testing.T) {
 		})
 	}
 
+	now := time.Now()
+
 	testCases := []struct {
 		Name string
 
@@ -49,7 +51,7 @@ func TestDeviceValidate(t *testing.T) {
 				Key:   "HOME",
 				Value: "/root",
 			}},
-			UpdatedTS: time.Now(),
+			UpdatedTS: &now,
 		},
 	}, {
 		Name: "error, bad type",
@@ -63,7 +65,7 @@ func TestDeviceValidate(t *testing.T) {
 				Key:   "illegal#2",
 				Value: func() { return },
 			}},
-			UpdatedTS: time.Now(),
+			UpdatedTS: &now,
 		},
 		Error: errors.New(
 			"invalid device object: " +
