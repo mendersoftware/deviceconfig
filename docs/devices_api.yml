@@ -40,7 +40,7 @@ paths:
             application/json:
               schema:
                 type: object
-                $ref: '#/components/schemas/Configuration'
+                $ref: '#/components/schemas/DeviceAPIConfiguration'
         400:
           description: Bad Request.
           content:
@@ -68,7 +68,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Configuration'
+              $ref: '#/components/schemas/DeviceAPIConfiguration'
       responses:
         204:
           description: Created
@@ -95,7 +95,7 @@ components:
         JWT token issued by 'POST /api/devices/v1/authentication/auth_requests'
 
   schemas:
-    Configuration:
+    DeviceAPIConfiguration:
       type: object
       additionalProperties:
         type: string
