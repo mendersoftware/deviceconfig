@@ -188,6 +188,13 @@ components:
           type: integer
           description: The number of times a device can retry the deployment in case of failure, defaults to 0
           default: 0
+        update_control_map:
+          x-mender-plan: ["enterprise"]
+          type: object
+          additionalProperties: true
+          description: |
+              A valid JSON object defining the update control map.
+              *NOTE*: Available only in the Enterprise plan.
 
     NewConfigurationDeploymentResponse:
       type: object

@@ -180,7 +180,7 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 	}
 	response.DeploymentID = deploymentID
 	err = a.workflows.DeployConfiguration(ctx, identity.Tenant, device.ID,
-		response.DeploymentID, configuration, request.Retries)
+		response.DeploymentID, configuration, request.Retries, request.UpdateControlMap)
 	if err != nil {
 		return response, err
 	}
