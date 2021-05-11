@@ -33,6 +33,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	professionalToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJwcm9mZXNzaW9uYWwifQ.MuqE9VLRSEIIxEK5FsenGi9H5SnaH9nAOKW-RVxZycE"
+	enterpriseToken   = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4"
+	osToken           = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJvcyJ9.IAkVl6GRbNAameEBozs49UYoFHjthxJxGGd4ZjmgV_Q"
+)
+
 func TestSetConfiguration(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -710,6 +716,7 @@ func TestDeployConfiguration(t *testing.T) {
 		rbac                    bool
 		areDevicesInGroupRsp    bool
 		areDevicesInGroupError  error
+		token                   string
 		status                  int
 	}{
 		"ok": {
@@ -783,6 +790,77 @@ func TestDeployConfiguration(t *testing.T) {
 			callGetDevice:           true,
 			callDeployConfiguration: true,
 			status:                  http.StatusOK,
+		},
+		"ok, update control map": {
+			deviceID: deviceID,
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
+			},
+			requestBody: "{\"retries\": 0, \"update_contrlo_map\":\"bar\", \"configuration\":{\"foo\":\"bar\"}}",
+			deployConfiguration: model.DeployConfigurationResponse{
+				DeploymentID: uuid.New(),
+			},
+			callGetDevice:           true,
+			callDeployConfiguration: true,
+			status:                  200,
+		},
+		"ko, update control map": {
+			deviceID: deviceID,
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
+			},
+			requestBody: "{\"retries\": 3, \"update_control_map\":{\"foo\":\"bar\"}}",
+			deployConfiguration: model.DeployConfigurationResponse{
+				DeploymentID: uuid.New(),
+			},
+			callGetDevice:           true,
+			callDeployConfiguration: false,
+			token:                   osToken,
+			status:                  403,
 		},
 		"rbac: forbidden": {
 			deviceID: deviceID,
@@ -970,7 +1048,11 @@ func TestDeployConfiguration(t *testing.T) {
 				bytes.NewReader([]byte(tc.requestBody)),
 			)
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+			if len(tc.token) > 0 {
+				req.Header.Set("Authorization", tc.token)
+			} else {
+				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
+			}
 			if tc.rbac {
 				req.Header.Set(model.RBACHeaderDeploymentsGroups, "foo")
 			}
