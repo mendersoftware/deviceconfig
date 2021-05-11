@@ -86,13 +86,15 @@ github.com/leodido/go-urn
 github.com/magiconair/properties
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
-# github.com/mendersoftware/go-lib-micro v0.0.0-20210119151235-ff2b5060b274
+# github.com/mendersoftware/go-lib-micro v0.0.0-20210510092857-1c8eddef2dad
 ## explicit
 github.com/mendersoftware/go-lib-micro/accesslog
+github.com/mendersoftware/go-lib-micro/addons
 github.com/mendersoftware/go-lib-micro/config
 github.com/mendersoftware/go-lib-micro/identity
 github.com/mendersoftware/go-lib-micro/log
 github.com/mendersoftware/go-lib-micro/mongo/migrate
+github.com/mendersoftware/go-lib-micro/plan
 github.com/mendersoftware/go-lib-micro/requestid
 github.com/mendersoftware/go-lib-micro/requestlog
 github.com/mendersoftware/go-lib-micro/rest.utils
