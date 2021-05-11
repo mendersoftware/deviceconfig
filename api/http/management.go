@@ -34,7 +34,7 @@ import (
 
 // API errors
 var (
-	ErrAccessDeniedByRBAC        = errors.New("Access denied (RBAC).")
+	errAccessDeniedByRBAC        = errors.New("Access denied (RBAC).")
 	errUpdateContrloMapForbidden = errors.New(
 		"forbidden: update control map is available only for Enterprise customers")
 )
@@ -78,7 +78,7 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 		}
 		if !allowed {
 			rest.RenderError(
-				c, http.StatusForbidden, ErrAccessDeniedByRBAC)
+				c, http.StatusForbidden, errAccessDeniedByRBAC)
 			return
 		}
 	}
@@ -124,7 +124,7 @@ func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 		}
 		if !allowed {
 			rest.RenderError(
-				c, http.StatusForbidden, ErrAccessDeniedByRBAC)
+				c, http.StatusForbidden, errAccessDeniedByRBAC)
 			return
 		}
 	}
@@ -170,7 +170,7 @@ func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 		}
 		if !allowed {
 			rest.RenderError(
-				c, http.StatusForbidden, ErrAccessDeniedByRBAC)
+				c, http.StatusForbidden, errAccessDeniedByRBAC)
 			return
 		}
 	}
