@@ -747,6 +747,78 @@ func TestDeployConfiguration(t *testing.T) {
 			callDeployConfiguration: true,
 			status:                  200,
 		},
+		"ok, rbac": {
+			deviceID: deviceID,
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
+			},
+			requestBody: "{\"retries\": 0}",
+			deployConfiguration: model.DeployConfigurationResponse{
+				DeploymentID: uuid.New(),
+			},
+			rbac:                    true,
+			areDevicesInGroupRsp:    true,
+			callGetDevice:           true,
+			callDeployConfiguration: true,
+			status:                  http.StatusOK,
+		},
+		"rbac: forbidden": {
+			deviceID: deviceID,
+			device: model.Device{
+				ID: deviceID,
+				ConfiguredAttributes: []model.Attribute{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				ReportedAttributes: []model.Attribute{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key3",
+						Value: "value3",
+					},
+				},
+				UpdatedTS: ptrNow(),
+				ReportTS:  ptrNow(),
+			},
+			requestBody: "{\"retries\": 0}",
+			deployConfiguration: model.DeployConfigurationResponse{
+				DeploymentID: uuid.New(),
+			},
+			rbac:                 true,
+			areDevicesInGroupRsp: false,
+			status:               http.StatusForbidden,
+		},
 		"ko, error in DeployConfiguration": {
 			deviceID: deviceID,
 			device: model.Device{
@@ -823,78 +895,6 @@ func TestDeployConfiguration(t *testing.T) {
 			},
 			callGetDevice: true,
 			status:        400,
-		},
-		"ok, rbac": {
-			deviceID: deviceID,
-			device: model.Device{
-				ID: deviceID,
-				ConfiguredAttributes: []model.Attribute{
-					{
-						Key:   "key0",
-						Value: "value0",
-					},
-					{
-						Key:   "key2",
-						Value: "value2",
-					},
-				},
-				ReportedAttributes: []model.Attribute{
-					{
-						Key:   "key1",
-						Value: "value1",
-					},
-					{
-						Key:   "key3",
-						Value: "value3",
-					},
-				},
-				UpdatedTS: ptrNow(),
-				ReportTS:  ptrNow(),
-			},
-			requestBody: "{\"retries\": 0}",
-			deployConfiguration: model.DeployConfigurationResponse{
-				DeploymentID: uuid.New(),
-			},
-			rbac:                    true,
-			areDevicesInGroupRsp:    true,
-			callGetDevice:           true,
-			callDeployConfiguration: true,
-			status:                  http.StatusOK,
-		},
-		"rbac: forbidden": {
-			deviceID: deviceID,
-			device: model.Device{
-				ID: deviceID,
-				ConfiguredAttributes: []model.Attribute{
-					{
-						Key:   "key0",
-						Value: "value0",
-					},
-					{
-						Key:   "key2",
-						Value: "value2",
-					},
-				},
-				ReportedAttributes: []model.Attribute{
-					{
-						Key:   "key1",
-						Value: "value1",
-					},
-					{
-						Key:   "key3",
-						Value: "value3",
-					},
-				},
-				UpdatedTS: ptrNow(),
-				ReportTS:  ptrNow(),
-			},
-			requestBody: "{\"retries\": 0}",
-			deployConfiguration: model.DeployConfigurationResponse{
-				DeploymentID: uuid.New(),
-			},
-			rbac:                 true,
-			areDevicesInGroupRsp: false,
-			status:               http.StatusForbidden,
 		},
 		"rbac: app error": {
 			deviceID: deviceID,
