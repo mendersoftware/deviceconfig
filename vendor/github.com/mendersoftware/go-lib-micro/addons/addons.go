@@ -11,19 +11,43 @@
 //    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
+package addons
 
-package model
+const (
+	MenderTroubleshoot = "troubleshoot"
+	MenderConfigure    = "configure"
+)
 
-import "github.com/google/uuid"
+var (
+	KnownAddons = []string{
+		MenderTroubleshoot,
+		MenderConfigure,
+	}
 
-type DeployConfigurationRequest struct {
-	// Retries represents the number of retries in case of deployment failures
-	Retries uint `json:"retries"`
+	AllAddonsDisabled = []Addon{
+		{
+			Name:    MenderConfigure,
+			Enabled: false,
+		},
+		{
+			Name:    MenderTroubleshoot,
+			Enabled: false,
+		},
+	}
+	AllAddonsEnabled = []Addon{
+		{
+			Name:    MenderConfigure,
+			Enabled: true,
+		},
+		{
+			Name:    MenderTroubleshoot,
+			Enabled: true,
+		},
+	}
+	TrialAddons = AllAddonsEnabled
+)
 
-	// Optional update_control_map (Enterprise-only)
-	UpdateControlMap map[string]interface{} `json:"update_control_map,omitempty"`
-}
-
-type DeployConfigurationResponse struct {
-	DeploymentID uuid.UUID `json:"deployment_id"`
+type Addon struct {
+	Name    string `json:"name" bson:"name"`
+	Enabled bool   `json:"enabled" bson:"enabled"`
 }

@@ -112,10 +112,11 @@ func (l AuditLog) Validate() error {
 }
 
 type DeployConfigurationWorkflow struct {
-	RequestID     string    `json:"request_id"`
-	TenantID      string    `json:"tenant_id"`
-	DeviceID      string    `json:"device_id"`
-	DeploymentID  uuid.UUID `json:"deployment_id"`
-	Configuration string    `json:"configuration"`
-	Retries       uint      `json:"retries"`
+	RequestID        string                 `json:"request_id"`
+	TenantID         string                 `json:"tenant_id"`
+	DeviceID         string                 `json:"device_id"`
+	DeploymentID     uuid.UUID              `json:"deployment_id"`
+	Configuration    string                 `json:"configuration"`
+	Retries          uint                   `json:"retries"`
+	UpdateControlMap map[string]interface{} `json:"update_control_map,omitempty"`
 }

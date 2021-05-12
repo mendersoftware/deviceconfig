@@ -427,6 +427,7 @@ func TestDeployConfiguration(t *testing.T) {
 					mock.AnythingOfType("uuid.UUID"),
 					configuration,
 					tc.request.Retries,
+					tc.request.UpdateControlMap,
 				).Return(tc.err)
 			}
 

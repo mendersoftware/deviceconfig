@@ -45,7 +45,8 @@ type Client interface {
 	CheckHealth(ctx context.Context) error
 	SubmitAuditLog(ctx context.Context, log AuditLog) error
 	DeployConfiguration(ctx context.Context, tenantID string, deviceID string,
-		deploymentID uuid.UUID, configuration []byte, retries uint) error
+		deploymentID uuid.UUID, configuration []byte,
+		retries uint, updateControlMap map[string]interface{}) error
 }
 
 type ClientOptions struct {
@@ -162,7 +163,8 @@ func (c *client) SubmitAuditLog(ctx context.Context, log AuditLog) error {
 }
 
 func (c *client) DeployConfiguration(ctx context.Context, tenantID string, deviceID string,
-	deploymentID uuid.UUID, configuration []byte, retries uint) error {
+	deploymentID uuid.UUID, configuration []byte, retries uint,
+	updateControlMap map[string]interface{}) error {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
@@ -170,12 +172,13 @@ func (c *client) DeployConfiguration(ctx context.Context, tenantID string, devic
 	}
 
 	wflow := DeployConfigurationWorkflow{
-		RequestID:     requestid.FromContext(ctx),
-		TenantID:      tenantID,
-		DeviceID:      deviceID,
-		DeploymentID:  deploymentID,
-		Configuration: string(configuration),
-		Retries:       retries,
+		RequestID:        requestid.FromContext(ctx),
+		TenantID:         tenantID,
+		DeviceID:         deviceID,
+		DeploymentID:     deploymentID,
+		Configuration:    string(configuration),
+		Retries:          retries,
+		UpdateControlMap: updateControlMap,
 	}
 
 	payload, _ := json.Marshal(wflow)
