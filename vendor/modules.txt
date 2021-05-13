@@ -32,7 +32,7 @@ github.com/fsnotify/fsnotify
 github.com/gin-contrib/cors
 # github.com/gin-contrib/sse v0.1.0
 github.com/gin-contrib/sse
-# github.com/gin-gonic/gin v1.6.3
+# github.com/gin-gonic/gin v1.7.1
 ## explicit
 github.com/gin-gonic/gin
 github.com/gin-gonic/gin/binding
@@ -48,7 +48,7 @@ github.com/go-playground/locales
 github.com/go-playground/locales/currency
 # github.com/go-playground/universal-translator v0.17.0
 github.com/go-playground/universal-translator
-# github.com/go-playground/validator/v10 v10.2.0
+# github.com/go-playground/validator/v10 v10.4.1
 github.com/go-playground/validator/v10
 # github.com/go-stack/stack v1.8.0
 github.com/go-stack/stack
@@ -86,13 +86,15 @@ github.com/leodido/go-urn
 github.com/magiconair/properties
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
-# github.com/mendersoftware/go-lib-micro v0.0.0-20210119151235-ff2b5060b274
+# github.com/mendersoftware/go-lib-micro v0.0.0-20210510092857-1c8eddef2dad
 ## explicit
 github.com/mendersoftware/go-lib-micro/accesslog
+github.com/mendersoftware/go-lib-micro/addons
 github.com/mendersoftware/go-lib-micro/config
 github.com/mendersoftware/go-lib-micro/identity
 github.com/mendersoftware/go-lib-micro/log
 github.com/mendersoftware/go-lib-micro/mongo/migrate
+github.com/mendersoftware/go-lib-micro/plan
 github.com/mendersoftware/go-lib-micro/requestid
 github.com/mendersoftware/go-lib-micro/requestlog
 github.com/mendersoftware/go-lib-micro/rest.utils
@@ -151,7 +153,7 @@ github.com/xdg-go/scram
 github.com/xdg-go/stringprep
 # github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d
 github.com/youmark/pkcs8
-# go.mongodb.org/mongo-driver v1.5.1
+# go.mongodb.org/mongo-driver v1.5.2
 ## explicit
 go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
@@ -185,10 +187,10 @@ go.mongodb.org/mongo-driver/x/mongo/driver/session
 go.mongodb.org/mongo-driver/x/mongo/driver/topology
 go.mongodb.org/mongo-driver/x/mongo/driver/uuid
 go.mongodb.org/mongo-driver/x/mongo/driver/wiremessage
-# golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
-## explicit
+# golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/ocsp
 golang.org/x/crypto/pbkdf2
+golang.org/x/crypto/sha3
 # golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 ## explicit
 golang.org/x/net/context
@@ -197,6 +199,7 @@ golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
 # golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
 ## explicit
+golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows

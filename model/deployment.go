@@ -17,7 +17,11 @@ package model
 import "github.com/google/uuid"
 
 type DeployConfigurationRequest struct {
+	// Retries represents the number of retries in case of deployment failures
 	Retries uint `json:"retries"`
+
+	// Optional update_control_map (Enterprise-only)
+	UpdateControlMap map[string]interface{} `json:"update_control_map,omitempty"`
 }
 
 type DeployConfigurationResponse struct {

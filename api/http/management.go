@@ -25,6 +25,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 
+	"github.com/mendersoftware/go-lib-micro/identity"
+	"github.com/mendersoftware/go-lib-micro/plan"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
 
 	"github.com/mendersoftware/deviceconfig/app"
@@ -32,7 +34,9 @@ import (
 
 // API errors
 var (
-	ErrAccessDeniedByRBAC = errors.New("Access denied (RBAC).")
+	errAccessDeniedByRBAC        = errors.New("Access denied (RBAC).")
+	errUpdateContrloMapForbidden = errors.New(
+		"forbidden: update control map is available only for Enterprise customers")
 )
 
 type ManagementAPI struct {
@@ -74,7 +78,7 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 		}
 		if !allowed {
 			rest.RenderError(
-				c, http.StatusForbidden, ErrAccessDeniedByRBAC)
+				c, http.StatusForbidden, errAccessDeniedByRBAC)
 			return
 		}
 	}
@@ -120,7 +124,7 @@ func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 		}
 		if !allowed {
 			rest.RenderError(
-				c, http.StatusForbidden, ErrAccessDeniedByRBAC)
+				c, http.StatusForbidden, errAccessDeniedByRBAC)
 			return
 		}
 	}
@@ -166,7 +170,7 @@ func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 		}
 		if !allowed {
 			rest.RenderError(
-				c, http.StatusForbidden, ErrAccessDeniedByRBAC)
+				c, http.StatusForbidden, errAccessDeniedByRBAC)
 			return
 		}
 	}
@@ -198,6 +202,18 @@ func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 			http.StatusBadRequest,
 			errors.Wrap(err, "malformed request body"),
 		)
+		return
+	}
+
+	identity := identity.FromContext(ctx)
+	if identity == nil {
+		rest.RenderError(c, http.StatusForbidden, errInvalidIdentity)
+		return
+	}
+	// udpate control map is available only for Enterprise customers
+	if len(request.UpdateControlMap) > 0 &&
+		!plan.IsHigherOrEqual(identity.Plan, plan.PlanEnterprise) {
+		rest.RenderError(c, http.StatusForbidden, errUpdateContrloMapForbidden)
 		return
 	}
 

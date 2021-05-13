@@ -423,12 +423,13 @@ func TestDeployConfiguration(t *testing.T) {
 	testCases := []struct {
 		Name string
 
-		CTX           context.Context
-		tenantID      string
-		deviceID      string
-		deploymentID  uuid.UUID
-		configuration []byte
-		retries       uint
+		CTX              context.Context
+		tenantID         string
+		deviceID         string
+		deploymentID     uuid.UUID
+		configuration    []byte
+		retries          uint
+		updateControlMap map[string]interface{}
 
 		URLNoise string // Sole purpose is to provide a bad URL
 
@@ -446,11 +447,12 @@ func TestDeployConfiguration(t *testing.T) {
 			),
 			"testing"),
 
-		tenantID:      "tenantID",
-		deviceID:      uuid.New().String(),
-		deploymentID:  uuid.New(),
-		configuration: []byte("{\"key\":\"value\"}"),
-		retries:       1,
+		tenantID:         "tenantID",
+		deviceID:         uuid.New().String(),
+		deploymentID:     uuid.New(),
+		configuration:    []byte("{\"key\":\"value\"}"),
+		retries:          1,
+		updateControlMap: map[string]interface{}{"foo": "bar"},
 
 		Response: &http.Response{
 			StatusCode: 201,
@@ -571,7 +573,7 @@ func TestDeployConfiguration(t *testing.T) {
 				}
 			}
 
-			err := c.DeployConfiguration(tc.CTX, tc.tenantID, tc.deviceID, tc.deploymentID, tc.configuration, tc.retries)
+			err := c.DeployConfiguration(tc.CTX, tc.tenantID, tc.deviceID, tc.deploymentID, tc.configuration, tc.retries, tc.updateControlMap)
 
 			if tc.Error != nil {
 				if assert.Error(t, err) {
