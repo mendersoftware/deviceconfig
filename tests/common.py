@@ -85,4 +85,4 @@ def management_api_with_params(user_id, plan=None, tenant_id=None):
 def devices_api_with_params(device_id, plan=None, tenant_id=None):
     api_conf = devices_api.Configuration.get_default_copy()
     api_conf.access_token = make_device_token(device_id, plan, tenant_id)
-    return devices_api.DevicesAPIClient(devices_api.ApiClient(api_conf))
+    return devices_api.DeviceAPIClient(devices_api.ApiClient(api_conf))

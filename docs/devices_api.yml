@@ -24,14 +24,14 @@ security:
   - DeviceJWT: []
 
 tags:
-  - name: DevicesAPI
+  - name: Device API
 
 paths:
   /configuration:
     get:
       operationId: Get Device Configuration
       tags:
-        - DevicesAPI
+        - Device API
       summary: Query the configuration store; retrieve all key-value pairs
       responses:
         200:
@@ -62,7 +62,7 @@ paths:
     put:
       operationId: Report Device Configuration
       tags:
-        - DevicesAPI
+        - Device API
       summary: Set a key-value pair store, updating if existing, removing if empty
       requestBody:
         content:
