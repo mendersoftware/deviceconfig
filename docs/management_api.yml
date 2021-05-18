@@ -25,14 +25,14 @@ security:
   - ManagementJWT: []
 
 tags:
-  - name: ManagementAPI
+  - name: Management API
 
 paths:
   /configurations/device/{deviceId}:
     get:
       operationId: Get Device Configuration
       tags:
-        - ManagementAPI
+        - Management API
       summary: Get the device's configuration
       parameters:
         - in: path
@@ -90,7 +90,7 @@ paths:
     put:
       operationId: Set Device Configuration
       tags:
-        - ManagementAPI
+        - Management API
       summary: Set the device's configuration
       requestBody:
         content:
@@ -124,7 +124,7 @@ paths:
     post:
       operationId: Deploy Device Configuration
       tags:
-        - ManagementAPI
+        - Management API
       summary: Deploy the device's configuration
       requestBody:
         content:
