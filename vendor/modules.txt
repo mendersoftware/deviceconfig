@@ -32,7 +32,7 @@ github.com/fsnotify/fsnotify
 github.com/gin-contrib/cors
 # github.com/gin-contrib/sse v0.1.0
 github.com/gin-contrib/sse
-# github.com/gin-gonic/gin v1.7.1
+# github.com/gin-gonic/gin v1.7.2
 ## explicit
 github.com/gin-gonic/gin
 github.com/gin-gonic/gin/binding
@@ -118,7 +118,7 @@ github.com/pmezard/go-difflib/difflib
 github.com/russross/blackfriday/v2
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# github.com/sirupsen/logrus v1.7.0
+# github.com/sirupsen/logrus v1.8.1
 github.com/sirupsen/logrus
 # github.com/spf13/afero v1.1.2
 github.com/spf13/afero
