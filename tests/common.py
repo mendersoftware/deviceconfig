@@ -18,7 +18,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import devices_api
-import internal_api
 import management_api
 
 
