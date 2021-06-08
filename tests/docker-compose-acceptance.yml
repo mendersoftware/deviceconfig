@@ -1,19 +1,15 @@
 version: '2.1'
 services:
 
-    tester:
-      image: testing
-      networks:
-        mender: {}
-      volumes:
-        - ".:/testing"
-      depends_on:
-        - mender-deviceconfig
-        - mmock
-      command: --host 'mender-deviceconfig:8080'
-      environment:
-        TESTING_MMOCK_HOST: "mmock:8080"
-        TESTING_HOST: "mender-deviceconfig:8080"
+    acceptance:
+        image: mendersoftware/mender-test-containers:acceptance-testing
+        networks:
+            - mender
+        volumes:
+            - ".:/testing"
+        depends_on:
+            - mender-deviceconfig
+            - mmock
 
     mender-deviceconfig:
       image: mendersoftware/deviceconfig:prtest

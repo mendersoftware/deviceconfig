@@ -18,7 +18,6 @@ import requests
 
 from common import management_api_with_params
 from internal_api import InternalAPIClient
-from management_api import ApiException as ManagementApiException
 
 
 @pytest.fixture
