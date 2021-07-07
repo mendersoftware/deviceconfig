@@ -17,7 +17,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 
 servers:
-  - url: https://mender-deviceconfig:8080/api/internal/v1/deviceconfig
+  - url: http://mender-deviceconfig:8080/api/internal/v1/deviceconfig
 
 tags:
   - name: Internal API
