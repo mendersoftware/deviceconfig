@@ -15,9 +15,7 @@
 package http
 
 import (
-	"context"
 	"net/http"
-	"strings"
 
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
@@ -34,7 +32,6 @@ import (
 
 // API errors
 var (
-	errAccessDeniedByRBAC        = errors.New("Access denied (RBAC).")
 	errUpdateContrloMapForbidden = errors.New(
 		"forbidden: update control map is available only for Enterprise customers")
 )
@@ -64,25 +61,6 @@ func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 		return
 	}
 
-	// RBAC
-	if len(c.Request.Header.Get(model.RBACHeaderDeploymentsGroups)) > 1 {
-		allowed, err := api.isAllowed(
-			ctx, c.Request, devID, model.RBACHeaderDeploymentsGroups)
-		if err != nil {
-			c.Error(err) //nolint:errcheck
-			rest.RenderError(c,
-				http.StatusInternalServerError,
-				errors.New(http.StatusText(http.StatusInternalServerError)),
-			)
-			return
-		}
-		if !allowed {
-			rest.RenderError(
-				c, http.StatusForbidden, errAccessDeniedByRBAC)
-			return
-		}
-	}
-
 	for _, a := range configuration {
 		if err := a.Validate(); err != nil {
 			rest.RenderError(c,
@@ -110,25 +88,6 @@ func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 
 	devID := c.Param("device_id")
 
-	// RBAC
-	if len(c.Request.Header.Get(model.RBACHeaderInvetoryGroups)) > 1 {
-		allowed, err := api.isAllowed(
-			ctx, c.Request, devID, model.RBACHeaderInvetoryGroups)
-		if err != nil {
-			c.Error(err) //nolint:errcheck
-			rest.RenderError(c,
-				http.StatusInternalServerError,
-				errors.New(http.StatusText(http.StatusInternalServerError)),
-			)
-			return
-		}
-		if !allowed {
-			rest.RenderError(
-				c, http.StatusForbidden, errAccessDeniedByRBAC)
-			return
-		}
-	}
-
 	device, err := api.App.GetDevice(ctx, devID)
 	if err != nil {
 		switch cause := errors.Cause(err); cause {
@@ -155,25 +114,6 @@ func (api *ManagementAPI) GetConfiguration(c *gin.Context) {
 func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 	ctx := c.Request.Context()
 	devID := c.Param("device_id")
-
-	// RBAC
-	if len(c.Request.Header.Get(model.RBACHeaderDeploymentsGroups)) > 1 {
-		allowed, err := api.isAllowed(
-			ctx, c.Request, devID, model.RBACHeaderDeploymentsGroups)
-		if err != nil {
-			c.Error(err) //nolint:errcheck
-			rest.RenderError(c,
-				http.StatusInternalServerError,
-				errors.New(http.StatusText(http.StatusInternalServerError)),
-			)
-			return
-		}
-		if !allowed {
-			rest.RenderError(
-				c, http.StatusForbidden, errAccessDeniedByRBAC)
-			return
-		}
-	}
 
 	device, err := api.App.GetDevice(ctx, devID)
 	if err != nil {
@@ -227,24 +167,4 @@ func (api *ManagementAPI) DeployConfiguration(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
-}
-
-//isAllowed checks if the user is allowed to access device belonging to a given group
-func (api *ManagementAPI) isAllowed(
-	ctx context.Context, r *http.Request, devID, headerKey string) (bool, error) {
-
-	var err error
-	allowed := false
-	for _, group := range strings.Split(
-		r.Header.Get(headerKey), ",") {
-		allowed, err = api.App.AreDevicesInGroup(
-			ctx, []string{devID}, group)
-		if err != nil {
-			return false, err
-		}
-		if allowed {
-			break
-		}
-	}
-	return allowed, nil
 }
