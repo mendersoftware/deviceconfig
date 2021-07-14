@@ -250,119 +250,6 @@ func TestSetConfiguration(t *testing.T) {
 			}(),
 			Status: http.StatusBadRequest,
 		},
-
-		{
-			Name: "ok, rbac",
-
-			Request: func() *http.Request {
-				body, _ := json.Marshal(map[string]interface{}{
-					"key0": "value0",
-				})
-
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					bytes.NewReader(body),
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				req.Header.Set(model.RBACHeaderDeploymentsGroups, "foo, bar")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("SetConfiguration",
-					contextMatcher,
-					mock.AnythingOfType("string"),
-					model.Attributes{
-						{
-							Key:   "key0",
-							Value: "value0",
-						},
-					},
-				).Return(nil)
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(true, nil)
-				return app
-			}(),
-			Status: http.StatusNoContent,
-		},
-		{
-			Name: "rbac forbidden",
-
-			Request: func() *http.Request {
-				body, _ := json.Marshal(map[string]interface{}{
-					"key0": "value0",
-				})
-
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					bytes.NewReader(body),
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				req.Header.Set(model.RBACHeaderDeploymentsGroups, "foo")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(false, nil)
-				return app
-			}(),
-			Status: http.StatusForbidden,
-		},
-		{
-			Name: "rbac app error",
-
-			Request: func() *http.Request {
-				body, _ := json.Marshal(map[string]interface{}{
-					"key0": "value0",
-				})
-
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("PUT",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					bytes.NewReader(body),
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				req.Header.Set(model.RBACHeaderDeploymentsGroups, "foo")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(false, errors.New("error"))
-				return app
-			}(),
-			Status: http.StatusInternalServerError,
-		},
 	}
 	for i := range testCases {
 		tc := testCases[i]
@@ -579,100 +466,6 @@ func TestGetConfiguration(t *testing.T) {
 			}(),
 			Status: http.StatusInternalServerError,
 		},
-		{
-			Name: "ok, rbac",
-
-			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					nil,
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				req.Header.Set(model.RBACHeaderInvetoryGroups, "foo")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("GetDevice",
-					contextMatcher,
-					mock.AnythingOfType("string"),
-				).Return(device, nil)
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(true, nil)
-				return app
-			}(),
-			Status: http.StatusOK,
-		},
-		{
-			Name: "rbac: forbidden",
-
-			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					nil,
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				req.Header.Set(model.RBACHeaderInvetoryGroups, "foo")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(false, nil)
-				return app
-			}(),
-			Status: http.StatusForbidden,
-		},
-		{
-			Name: "rbac: app error",
-
-			Request: func() *http.Request {
-				repl := strings.NewReplacer(
-					":device_id", uuid.NewSHA1(
-						uuid.NameSpaceDNS, []byte("mender.io"),
-					).String(),
-				)
-				req, _ := http.NewRequest("GET",
-					"http://localhost"+URIManagement+repl.Replace(URIConfiguration),
-					nil,
-				)
-				req.Header.Set("Content-Type", "application/json")
-				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-				req.Header.Set(model.RBACHeaderInvetoryGroups, "foo")
-				return req
-			}(),
-
-			App: func() *mapp.App {
-				app := new(mapp.App)
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(false, errors.New("error"))
-				return app
-			}(),
-			Status: http.StatusInternalServerError,
-		},
 	}
 	for i := range testCases {
 		tc := testCases[i]
@@ -713,7 +506,6 @@ func TestDeployConfiguration(t *testing.T) {
 		deployConfiguration     model.DeployConfigurationResponse
 		deployConfigurationErr  error
 		callDeployConfiguration bool
-		rbac                    bool
 		areDevicesInGroupRsp    bool
 		areDevicesInGroupError  error
 		token                   string
@@ -753,43 +545,6 @@ func TestDeployConfiguration(t *testing.T) {
 			callGetDevice:           true,
 			callDeployConfiguration: true,
 			status:                  200,
-		},
-		"ok, rbac": {
-			deviceID: deviceID,
-			device: model.Device{
-				ID: deviceID,
-				ConfiguredAttributes: []model.Attribute{
-					{
-						Key:   "key0",
-						Value: "value0",
-					},
-					{
-						Key:   "key2",
-						Value: "value2",
-					},
-				},
-				ReportedAttributes: []model.Attribute{
-					{
-						Key:   "key1",
-						Value: "value1",
-					},
-					{
-						Key:   "key3",
-						Value: "value3",
-					},
-				},
-				UpdatedTS: ptrNow(),
-				ReportTS:  ptrNow(),
-			},
-			requestBody: "{\"retries\": 0}",
-			deployConfiguration: model.DeployConfigurationResponse{
-				DeploymentID: uuid.New(),
-			},
-			rbac:                    true,
-			areDevicesInGroupRsp:    true,
-			callGetDevice:           true,
-			callDeployConfiguration: true,
-			status:                  http.StatusOK,
 		},
 		"ok, update control map": {
 			deviceID: deviceID,
@@ -861,41 +616,6 @@ func TestDeployConfiguration(t *testing.T) {
 			callDeployConfiguration: false,
 			token:                   osToken,
 			status:                  403,
-		},
-		"rbac: forbidden": {
-			deviceID: deviceID,
-			device: model.Device{
-				ID: deviceID,
-				ConfiguredAttributes: []model.Attribute{
-					{
-						Key:   "key0",
-						Value: "value0",
-					},
-					{
-						Key:   "key2",
-						Value: "value2",
-					},
-				},
-				ReportedAttributes: []model.Attribute{
-					{
-						Key:   "key1",
-						Value: "value1",
-					},
-					{
-						Key:   "key3",
-						Value: "value3",
-					},
-				},
-				UpdatedTS: ptrNow(),
-				ReportTS:  ptrNow(),
-			},
-			requestBody: "{\"retries\": 0}",
-			deployConfiguration: model.DeployConfigurationResponse{
-				DeploymentID: uuid.New(),
-			},
-			rbac:                 true,
-			areDevicesInGroupRsp: false,
-			status:               http.StatusForbidden,
 		},
 		"ko, error in DeployConfiguration": {
 			deviceID: deviceID,
@@ -974,41 +694,6 @@ func TestDeployConfiguration(t *testing.T) {
 			callGetDevice: true,
 			status:        400,
 		},
-		"rbac: app error": {
-			deviceID: deviceID,
-			device: model.Device{
-				ID: deviceID,
-				ConfiguredAttributes: []model.Attribute{
-					{
-						Key:   "key0",
-						Value: "value0",
-					},
-					{
-						Key:   "key2",
-						Value: "value2",
-					},
-				},
-				ReportedAttributes: []model.Attribute{
-					{
-						Key:   "key1",
-						Value: "value1",
-					},
-					{
-						Key:   "key3",
-						Value: "value3",
-					},
-				},
-				UpdatedTS: ptrNow(),
-				ReportTS:  ptrNow(),
-			},
-			requestBody: "{\"retries\": 0}",
-			deployConfiguration: model.DeployConfigurationResponse{
-				DeploymentID: uuid.New(),
-			},
-			rbac:                   true,
-			areDevicesInGroupError: errors.New("error"),
-			status:                 http.StatusInternalServerError,
-		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -1029,14 +714,6 @@ func TestDeployConfiguration(t *testing.T) {
 				).Return(tc.deployConfiguration, tc.deployConfigurationErr)
 			}
 
-			if tc.rbac {
-				app.On("AreDevicesInGroup",
-					contextMatcher,
-					mock.AnythingOfType("[]string"),
-					"foo",
-				).Return(tc.areDevicesInGroupRsp, tc.areDevicesInGroupError)
-			}
-
 			router := NewRouter(app)
 
 			repl := strings.NewReplacer(
@@ -1052,9 +729,6 @@ func TestDeployConfiguration(t *testing.T) {
 				req.Header.Set("Authorization", tc.token)
 			} else {
 				req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibWVuZGVyLnBsYW4iOiJlbnRlcnByaXNlIn0.s27fi93Qik81WyBmDB5APE0DfGko7Pq8BImbp33-gy4")
-			}
-			if tc.rbac {
-				req.Header.Set(model.RBACHeaderDeploymentsGroups, "foo")
 			}
 
 			w := httptest.NewRecorder()
