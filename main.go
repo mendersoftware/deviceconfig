@@ -33,6 +33,8 @@ import (
 	"github.com/mendersoftware/deviceconfig/store/mongo"
 )
 
+var Version string = "unknown"
+
 func main() {
 	doMain(os.Args)
 }
@@ -83,7 +85,7 @@ func doMain(args []string) {
 		},
 	}
 	app.Usage = "Device Configure"
-	app.Version = "1.0.0"
+	app.Version = Version
 	app.Action = cmdServer
 
 	app.Before = func(args *cli.Context) error {
