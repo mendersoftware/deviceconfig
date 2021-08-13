@@ -17,9 +17,7 @@ package http
 import (
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"github.com/mendersoftware/deviceconfig/app"
@@ -81,35 +79,6 @@ func NewRouter(app app.App) http.Handler {
 	mgmtGrp.GET(URIConfiguration, mgmtAPI.GetConfiguration)
 	mgmtGrp.PUT(URIConfiguration, mgmtAPI.SetConfiguration)
 	mgmtGrp.POST(URIDeployConfiguration, mgmtAPI.DeployConfiguration)
-
-	// cors middleware for checking origin headers.
-	mgmtGrp.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
-		AllowCredentials: true,
-		AllowHeaders: []string{
-			"Accept",
-			"Allow",
-			"Content-Type",
-			"Origin",
-			"Authorization",
-			"Accept-Encoding",
-			"Access-Control-Request-Headers",
-			"Header-Access-Control-Request",
-		},
-		AllowMethods: []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodDelete,
-			http.MethodOptions,
-		},
-		AllowWebSockets: true,
-		ExposeHeaders: []string{
-			"Location",
-			"Link",
-		},
-		MaxAge: time.Hour * 12,
-	}))
 
 	devAPI := NewDevicesAPI(app)
 	devGrp := router.Group(URIDevices)
