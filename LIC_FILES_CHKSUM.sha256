@@ -1,8 +1,6 @@
 #
 # Apache-2.0
 b4acfcfa2a0ba1a8c82ec3965fbcee886cff8394ca4214e0ddac0a36beb1e05a  LICENSE
-cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  vendor/github.com/aws/aws-sdk-go/LICENSE.txt
-03cfaf331a260694d06227a589cdd2b5fcfab474697b72e250736696c313655a  vendor/github.com/jmespath/go-jmespath/LICENSE
 3eb823230e5d112e1bd032ccc82ae765cf676d0d6d46a1a1daa2d658b3005b67  vendor/github.com/mendersoftware/go-lib-micro/LICENSE
 c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4  vendor/github.com/modern-go/concurrent/LICENSE
 c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4  vendor/github.com/modern-go/reflect2/LICENSE
@@ -46,7 +44,6 @@ d18f6323b71b0b768bb5e9616e36da390fbd39369a81807cca352de4e4e6aa0b  vendor/gopkg.i
 6d13d89b6c33df37f92553cc95cec278d8770ddc78c9de84620cc16dfb48cef6  vendor/github.com/youmark/pkcs8/LICENSE
 #
 # BSD-3-Clause
-2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067  vendor/github.com/aws/aws-sdk-go/internal/sync/singleflight/LICENSE
 c8001d18c3dda64c7e72146f1b23d73619fcf426aed6778f447599f5ac8e600a  vendor/github.com/fsnotify/fsnotify/LICENSE
 8778a9fc1eaffb03ab873caae251df2d224f6b5502be8777d3cd573a4dd43903  vendor/github.com/golang/protobuf/LICENSE
 4835612df0098ca95f8e7d9e3bffcb02358d435dbb38057c844c99d7f725eb20  vendor/google.golang.org/protobuf/LICENSE
