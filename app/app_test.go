@@ -175,7 +175,7 @@ func TestSetConfiguration(t *testing.T) {
 	ds := new(mstore.DataStore)
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-	ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
+	ds.On("ReplaceConfiguration", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
 	app := New(ds, nil, nil, Config{})
@@ -256,7 +256,7 @@ func TestSetConfigurationWithAuditLogs(t *testing.T) {
 			ds := new(mstore.DataStore)
 			defer ds.AssertExpectations(t)
 			ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-			ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
+			ds.On("ReplaceConfiguration", ctx, deviceMatcher).Return(nil)
 
 			wflows := &mworkflows.Client{}
 			defer wflows.AssertExpectations(t)
@@ -333,7 +333,7 @@ func TestSetReportedConfiguration(t *testing.T) {
 	ds := new(mstore.DataStore)
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-	ds.On("UpsertReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
+	ds.On("ReplaceReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
 	app := New(ds, nil, nil, Config{})

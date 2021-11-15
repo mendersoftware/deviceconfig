@@ -28,7 +28,7 @@ func TestDeviceValidate(t *testing.T) {
 	t.Parallel()
 
 	tooManyAttributes := []Attribute{}
-	for i := 1; i <= maxNumberOfAttributes+1; i++ {
+	for i := 1; i <= AttributesMaxLength+1; i++ {
 		tooManyAttributes = append(tooManyAttributes, Attribute{
 			Key:   fmt.Sprintf("key%d", i),
 			Value: "value",
@@ -88,7 +88,7 @@ func TestDeviceValidate(t *testing.T) {
 			ConfiguredAttributes: tooManyAttributes,
 		},
 		Error: errors.New(
-			fmt.Sprintf("invalid device object: configured: too many configuration attributes, maximum is %d.", maxNumberOfAttributes),
+			fmt.Sprintf("invalid device object: configured: too many configuration attributes, maximum is %d.", AttributesMaxLength),
 		),
 	}}
 	for i := range testCases {

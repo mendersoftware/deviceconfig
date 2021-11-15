@@ -110,7 +110,7 @@ func (a *app) SetConfiguration(ctx context.Context,
 	devID string,
 	configuration model.Attributes) error {
 	now := time.Now()
-	err := a.store.UpsertConfiguration(ctx, model.Device{
+	err := a.store.ReplaceConfiguration(ctx, model.Device{
 		ID:                   devID,
 		ConfiguredAttributes: configuration,
 		UpdatedTS:            &now,
@@ -151,7 +151,7 @@ func (a *app) SetReportedConfiguration(ctx context.Context,
 	devID string,
 	configuration model.Attributes) error {
 	now := time.Now()
-	return a.store.UpsertReportedConfiguration(ctx, model.Device{
+	return a.store.ReplaceReportedConfiguration(ctx, model.Device{
 		ID:                 devID,
 		ReportedAttributes: configuration,
 		ReportTS:           &now,
