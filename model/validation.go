@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const maxNumberOfAttributes = 100
+const AttributesMaxLength = 100
 
 var (
 	lengthLessThan4096 = validation.Length(0, 4096)
@@ -37,15 +37,10 @@ var (
 		}
 	})
 
-	validateAttributes = validation.By(func(value interface{}) error {
-		attributes, ok := value.(Attributes)
-		if !ok {
-			return errors.Errorf("value is not an Attributes type: %T", value)
-		} else if len(attributes) > maxNumberOfAttributes {
-			msg := fmt.Sprintf("too many configuration attributes, maximum is %d",
-				maxNumberOfAttributes)
-			return errors.New(msg)
-		}
-		return nil
-	})
+	validateAttributesLength = validation.Length(
+		0, AttributesMaxLength,
+	).Error(fmt.Sprintf(
+		"too many configuration attributes, maximum is %d",
+		AttributesMaxLength,
+	))
 )

@@ -40,6 +40,10 @@ func (attr Attribute) Validate() error {
 
 type Attributes []Attribute
 
+func (a Attributes) Validate() error {
+	return validation.Validate([]Attribute(a), validateAttributesLength)
+}
+
 func map2Attributes(configurationMap map[string]interface{}) Attributes {
 	attributes := make(Attributes, len(configurationMap))
 	i := 0
