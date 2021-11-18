@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+
 	"github.com/mendersoftware/deviceconfig/model"
 )
 
