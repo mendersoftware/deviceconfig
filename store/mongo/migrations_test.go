@@ -18,10 +18,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mendersoftware/go-lib-micro/identity"
-	"github.com/mendersoftware/go-lib-micro/mongo/migrate"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mendersoftware/go-lib-micro/identity"
+	"github.com/mendersoftware/go-lib-micro/mongo/migrate"
 )
 
 func TestMigrate(t *testing.T) {
@@ -99,7 +100,12 @@ func TestMigrate(t *testing.T) {
 				)
 				assert.NoError(t, err)
 				// We don't have any migrations (yet).
-				assert.Equal(t, []migrate.MigrationEntry(nil), migrationInfo)
+				expectedVersion, err := migrate.NewVersion(DbVersion)
+				assert.NoError(t, err)
+				assert.Equal(t, []migrate.MigrationEntry{{
+					Version:   *expectedVersion,
+					Timestamp: migrationInfo[0].Timestamp,
+				}}, migrationInfo)
 			}
 		})
 	}
