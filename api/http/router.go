@@ -20,10 +20,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/mendersoftware/deviceconfig/app"
 	"github.com/mendersoftware/go-lib-micro/accesslog"
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/requestid"
+
+	"github.com/mendersoftware/deviceconfig/app"
 )
 
 // API URL used by the HTTP router
