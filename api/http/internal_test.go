@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,6 +29,8 @@ import (
 	mapp "github.com/mendersoftware/deviceconfig/app/mocks"
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
+	"github.com/mendersoftware/go-lib-micro/identity"
+	"github.com/mendersoftware/go-lib-micro/log"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -410,6 +414,145 @@ func TestProvisionDevice(t *testing.T) {
 			if tc.Error != nil {
 				b, _ := json.Marshal(tc.Error)
 				assert.JSONEq(t, string(b), string(w.Body.Bytes()))
+			}
+		})
+	}
+}
+
+func matchCTXIdentity(tenantID string) interface{} {
+	return mock.MatchedBy(func(ctx context.Context) bool {
+		if id := identity.FromContext(ctx); id != nil {
+			return id.Tenant == tenantID
+		}
+		return false
+	})
+}
+
+func TestUpdateConfiguration(t *testing.T) {
+	t.Parallel()
+	type testCase struct {
+		Name string
+
+		DeviceID string
+		TenantID string
+		Body     interface{}
+		App      func(t *testing.T, self *testCase) *mapp.App
+
+		Code  int
+		Error error
+	}
+	testCases := []testCase{{
+		Name: "ok",
+
+		DeviceID: "5526343c-69e4-48a2-9f44-d4542044294b",
+		TenantID: "123456789012345678901234",
+		Body: model.Attributes{{
+			Key:   "key",
+			Value: "value",
+		}},
+		App: func(t *testing.T, self *testCase) *mapp.App {
+			app := new(mapp.App)
+			app.On("UpdateConfiguration",
+				matchCTXIdentity(self.TenantID),
+				self.DeviceID,
+				self.Body.(model.Attributes),
+			).Return(nil).
+				Once()
+			return app
+		},
+		Code: http.StatusNoContent,
+	}, {
+		Name: "error/internal",
+
+		DeviceID: "5526343c-69e4-48a2-9f44-d4542044294b",
+		TenantID: "123456789012345678901234",
+		Body: model.Attributes{{
+			Key:   "key",
+			Value: "value",
+		}},
+		App: func(t *testing.T, self *testCase) *mapp.App {
+			app := new(mapp.App)
+			app.On("UpdateConfiguration",
+				matchCTXIdentity(self.TenantID),
+				self.DeviceID,
+				self.Body.(model.Attributes),
+			).Return(errors.New("internal error"))
+			return app
+		},
+		Code:  http.StatusInternalServerError,
+		Error: errors.New(http.StatusText(http.StatusInternalServerError)),
+	}, {
+		Name: "error/too many attributes",
+
+		DeviceID: "5526343c-69e4-48a2-9f44-d4542044294b",
+		TenantID: "123456789012345678901234",
+		Body: func() model.Attributes {
+			attrs := make(model.Attributes, model.AttributesMaxLength+1)
+			for i := range attrs {
+				attrs[i] = model.Attribute{
+					Key:   fmt.Sprintf("key%d", i),
+					Value: fmt.Sprintf("value%d", i),
+				}
+			}
+			return attrs
+		}(),
+		App: func(t *testing.T, self *testCase) *mapp.App {
+			return new(mapp.App)
+		},
+		Code:  http.StatusBadRequest,
+		Error: errors.New("invalid request parameters"),
+	}, {
+		Name: "error/too many attributes",
+
+		DeviceID: "5526343c-69e4-48a2-9f44-d4542044294b",
+		TenantID: "123456789012345678901234",
+		Body:     []byte("key:value"),
+		App: func(t *testing.T, self *testCase) *mapp.App {
+			return new(mapp.App)
+		},
+		Code:  http.StatusBadRequest,
+		Error: errors.New("malformed request parameters"),
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			l := log.NewEmpty()
+			l.Logger.Out = io.Discard
+			ctx := log.WithContext(context.Background(), l)
+			app := tc.App(t, &tc)
+			defer app.AssertExpectations(t)
+			path := strings.NewReplacer(
+				":tenant_id", tc.TenantID,
+				":device_id", tc.DeviceID,
+			).Replace(URIInternal + URITenant + URIConfiguration)
+
+			var body io.Reader
+			switch typ := tc.Body.(type) {
+			case []byte:
+				body = bytes.NewReader(typ)
+			default:
+				b, _ := json.Marshal(typ)
+				body = bytes.NewReader(b)
+			}
+			req, _ := http.NewRequestWithContext(
+				ctx,
+				http.MethodPatch,
+				"http://localhost:8080"+path,
+				body,
+			)
+
+			w := httptest.NewRecorder()
+			api := NewRouter(app)
+			api.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.Code, w.Code)
+			if tc.Error != nil {
+				var err rest.Error
+				_ = json.Unmarshal(w.Body.Bytes(), &err)
+				assert.Regexp(t, tc.Error.Error(), err.Error())
+			} else {
+				assert.Empty(t, w.Body.Bytes())
 			}
 		})
 	}
