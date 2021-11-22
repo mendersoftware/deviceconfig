@@ -178,7 +178,7 @@ func (a *app) UpdateConfiguration(
 		}
 		if err != nil {
 			return errors.Wrap(err,
-				"failed to submit audit log for setting the device configuration",
+				"failed to submit audit log for updating the device configuration",
 			)
 		}
 	}
