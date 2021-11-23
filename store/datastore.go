@@ -48,11 +48,15 @@ type DataStore interface {
 	// InsertDeviceConfig inserts a new device configuration
 	InsertDevice(ctx context.Context, dev model.Device) error
 
-	// UpsertDeviceConfig updates or inserts a new device configuration
-	UpsertConfiguration(ctx context.Context, dev model.Device) error
+	// ReplaceConfiguration replaces or inserts a new device configuration
+	ReplaceConfiguration(ctx context.Context, dev model.Device) error
 
-	// UpsertReportedConfiguration updates or inserts a new device reported configuration
-	UpsertReportedConfiguration(ctx context.Context, dev model.Device) error
+	// ReplaceReportedConfiguration replaces or inserts a new device reported configuration
+	ReplaceReportedConfiguration(ctx context.Context, dev model.Device) error
+
+	// UpdateConfiguration updates the attributes for deviceID by adding the new attributes
+	// to the existing set of (desired) attributes).
+	UpdateConfiguration(ctx context.Context, deviceID string, attrs model.Attributes) error
 
 	// SetDeploymentID updates the deployment ID of the device
 	SetDeploymentID(ctx context.Context, devID string, deploymentID uuid.UUID) error

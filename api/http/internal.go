@@ -125,6 +125,42 @@ func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
+// PATCH /tenants/:tenant_id/configurations/device/:device_id
+func (api *InternalAPI) UpdateConfiguration(c *gin.Context) {
+	deviceID := c.Param("device_id")
+	tenantID := c.Param("tenant_id")
+	ctx := identity.WithContext(c.Request.Context(), &identity.Identity{
+		Subject: deviceID,
+		Tenant:  tenantID,
+	})
+
+	var attrs model.Attributes
+	if err := c.ShouldBindJSON(&attrs); err != nil {
+		rest.RenderError(c,
+			http.StatusBadRequest,
+			errors.Wrap(err, "malformed request parameters"),
+		)
+		return
+	} else if err = attrs.Validate(); err != nil {
+		rest.RenderError(c,
+			http.StatusBadRequest,
+			errors.Wrap(err, "invalid request parameters"),
+		)
+		return
+	}
+
+	err := api.App.UpdateConfiguration(ctx, deviceID, attrs)
+	if err != nil {
+		_ = c.Error(err)
+		rest.RenderError(c,
+			http.StatusInternalServerError,
+			errors.New(http.StatusText(http.StatusInternalServerError)),
+		)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
 func (api *InternalAPI) DecommissionDevice(c *gin.Context) {
 	deviceID := c.Param("device_id")
 	ctx := identity.WithContext(c.Request.Context(),

@@ -174,3 +174,17 @@ func (_m *App) SetReportedConfiguration(ctx context.Context, devID string, confi
 
 	return r0
 }
+
+// UpdateConfiguration provides a mock function with given fields: ctx, devID, attrs
+func (_m *App) UpdateConfiguration(ctx context.Context, devID string, attrs model.Attributes) error {
+	ret := _m.Called(ctx, devID, attrs)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, model.Attributes) error); ok {
+		r0 = rf(ctx, devID, attrs)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}

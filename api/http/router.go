@@ -34,6 +34,7 @@ const (
 	URIManagement = "/api/management/v1/deviceconfig"
 
 	URITenants       = "/tenants"
+	URITenant        = "/tenants/:tenant_id"
 	URITenantDevices = "/tenants/:tenant_id/devices"
 	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
 
@@ -71,6 +72,8 @@ func NewRouter(app app.App) http.Handler {
 	intrnlGrp.POST(URITenants, intrnlAPI.ProvisionTenant)
 	intrnlGrp.POST(URITenantDevices, intrnlAPI.ProvisionDevice)
 	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
+
+	intrnlGrp.PATCH(URITenant+URIConfiguration, intrnlAPI.UpdateConfiguration)
 
 	mgmtAPI := NewManagementAPI(app)
 	mgmtGrp := router.Group(URIManagement)
