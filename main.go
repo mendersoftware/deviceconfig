@@ -47,7 +47,6 @@ func doMain(args []string) {
 				Usage: "Configuration `FILE`. " +
 					"Supports JSON, TOML, YAML and HCL " +
 					"formatted configs.",
-				Value:       "config.yaml",
 				Destination: &configPath,
 			},
 		},
