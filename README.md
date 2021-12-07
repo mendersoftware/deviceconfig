@@ -3,7 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mendersoftware/deviceconfig)](https://goreportcard.com/report/github.com/mendersoftware/deviceconfig)
 [![Docker pulls](https://img.shields.io/docker/pulls/mendersoftware/deviceconfig.svg?maxAge=3600)](https://hub.docker.com/r/mendersoftware/deviceconfig/)
 
-Mender: Device configuration service
+Mender: Device configuration micro service
 =============================
 
 ## General
