@@ -29,6 +29,9 @@ import (
 
 // API URL used by the HTTP router
 const (
+	pathParamDeviceID = "device_id"
+	pathParamTenantID = "tenant_id"
+
 	URIDevices    = "/api/devices/v1/deviceconfig"
 	URIInternal   = "/api/internal/v1/deviceconfig"
 	URIManagement = "/api/management/v1/deviceconfig"
@@ -55,6 +58,16 @@ func init() {
 	gin.DisableConsoleColor()
 }
 
+type APIHandler struct {
+	App app.App
+}
+
+func NewAPIHandler(app app.App) *APIHandler {
+	return &APIHandler{
+		App: app,
+	}
+}
+
 // NewRouter initializes a new gin.Engine as a http.Handler
 func NewRouter(app app.App) http.Handler {
 	router := gin.New()
@@ -63,7 +76,9 @@ func NewRouter(app app.App) http.Handler {
 	// requestid attaches X-Men-Requestid header to context
 	router.Use(requestid.Middleware())
 
-	intrnlAPI := NewInternalAPI(app)
+	apiHandler := NewAPIHandler(app)
+
+	intrnlAPI := (*InternalAPI)(apiHandler)
 	intrnlGrp := router.Group(URIInternal)
 
 	intrnlGrp.GET(URIAlive, intrnlAPI.Alive)
@@ -74,8 +89,9 @@ func NewRouter(app app.App) http.Handler {
 	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
 
 	intrnlGrp.PATCH(URITenant+URIConfiguration, intrnlAPI.UpdateConfiguration)
+	intrnlGrp.POST(URITenant+URIDeployConfiguration, intrnlAPI.DeployConfiguration)
 
-	mgmtAPI := NewManagementAPI(app)
+	mgmtAPI := (*ManagementAPI)(apiHandler)
 	mgmtGrp := router.Group(URIManagement)
 
 	// identity middleware for collecting JWT claims into request Context.
@@ -84,7 +100,7 @@ func NewRouter(app app.App) http.Handler {
 	mgmtGrp.PUT(URIConfiguration, mgmtAPI.SetConfiguration)
 	mgmtGrp.POST(URIDeployConfiguration, mgmtAPI.DeployConfiguration)
 
-	devAPI := NewDevicesAPI(app)
+	devAPI := (*DevicesAPI)(apiHandler)
 	devGrp := router.Group(URIDevices)
 	devGrp.Use(identity.Middleware())
 	devGrp.GET(URIDeviceConfiguration, devAPI.GetConfiguration)

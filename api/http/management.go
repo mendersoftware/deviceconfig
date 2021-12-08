@@ -26,8 +26,6 @@ import (
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/plan"
 	"github.com/mendersoftware/go-lib-micro/rest.utils"
-
-	"github.com/mendersoftware/deviceconfig/app"
 )
 
 // API errors
@@ -36,15 +34,8 @@ var (
 		"forbidden: update control map is available only for Enterprise customers")
 )
 
-type ManagementAPI struct {
-	App app.App
-}
-
-func NewManagementAPI(app app.App) *ManagementAPI {
-	return &ManagementAPI{
-		App: app,
-	}
-}
+// ManagementAPI is a namespace for the APIHandlers
+type ManagementAPI APIHandler
 
 func (api *ManagementAPI) SetConfiguration(c *gin.Context) {
 	var configuration model.Attributes
