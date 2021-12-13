@@ -31,6 +31,8 @@ import (
 	"github.com/mendersoftware/go-lib-micro/identity"
 )
 
+var contextMatcher = mock.MatchedBy(func(ctx context.Context) bool { return true })
+
 func TestHealthCheck(t *testing.T) {
 	t.Parallel()
 	err := errors.New("error")
@@ -175,7 +177,7 @@ func TestSetConfiguration(t *testing.T) {
 	ds := new(mstore.DataStore)
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-	ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
+	ds.On("ReplaceConfiguration", ctx, deviceMatcher).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
 	app := New(ds, nil, nil, Config{})
@@ -210,6 +212,168 @@ func TestSetConfiguration(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
+}
+
+func TestUpdateConfiguration(t *testing.T) {
+	t.Parallel()
+	type testCase struct {
+		Name string
+
+		CTX      context.Context
+		DeviceID string
+		Attrs    model.Attributes
+
+		Store func(t *testing.T, self *testCase) *mstore.DataStore
+		Wf    func(t *testing.T, self *testCase) *mworkflows.Client
+
+		Error error
+	}
+	testCases := []testCase{{
+		Name: "ok/single tenant",
+
+		CTX:      context.Background(),
+		DeviceID: "e1ce5c7a-5819-4ee1-aff7-f4fb0b50009c",
+		Attrs: model.Attributes{{
+			Key:   "key",
+			Value: "value",
+		}},
+
+		Store: func(t *testing.T, self *testCase) *mstore.DataStore {
+			store := new(mstore.DataStore)
+			store.On("UpdateConfiguration",
+				contextMatcher,
+				self.DeviceID,
+				self.Attrs,
+			).Return(nil).Once()
+			return store
+		},
+		Wf: func(t *testing.T, self *testCase) *mworkflows.Client {
+			return new(mworkflows.Client)
+		},
+	}, {
+		Name: "ok/with audit",
+
+		CTX: identity.WithContext(context.Background(), &identity.Identity{
+			Subject: "f363a096-3ef6-4871-be81-f39ca751d0c0",
+			IsUser:  true,
+		}),
+		DeviceID: "e1ce5c7a-5819-4ee1-aff7-f4fb0b50009c",
+		Attrs: model.Attributes{{
+			Key:   "key",
+			Value: "value",
+		}},
+
+		Store: func(t *testing.T, self *testCase) *mstore.DataStore {
+			store := new(mstore.DataStore)
+			store.On("UpdateConfiguration",
+				contextMatcher,
+				self.DeviceID,
+				self.Attrs,
+			).Return(nil).Once()
+			return store
+		},
+		Wf: func(t *testing.T, self *testCase) *mworkflows.Client {
+			wf := new(mworkflows.Client)
+			id := identity.FromContext(self.CTX)
+			wf.On("SubmitAuditLog",
+				self.CTX,
+				mock.AnythingOfType("workflows.AuditLog")).
+				Run(func(args mock.Arguments) {
+					al, ok := args.Get(1).(workflows.AuditLog)
+					if assert.True(t, ok) {
+						assert.Equal(t, id.Subject, al.Actor.ID)
+						assert.Equal(t, self.DeviceID, al.Object.ID)
+						assert.WithinDuration(t, time.Now(), al.EventTS, 5*time.Minute)
+					}
+				}).Return(nil).Once()
+			return wf
+		},
+	}, {
+		Name: "error/submitting audit",
+
+		CTX: identity.WithContext(context.Background(), &identity.Identity{
+			Subject: "f363a096-3ef6-4871-be81-f39ca751d0c0",
+			IsUser:  true,
+		}),
+		DeviceID: "e1ce5c7a-5819-4ee1-aff7-f4fb0b50009c",
+		Attrs: model.Attributes{{
+			Key:   "key",
+			Value: "value",
+		}},
+
+		Store: func(t *testing.T, self *testCase) *mstore.DataStore {
+			store := new(mstore.DataStore)
+			store.On("UpdateConfiguration",
+				contextMatcher,
+				self.DeviceID,
+				self.Attrs,
+			).Return(nil).Once()
+			return store
+		},
+		Wf: func(t *testing.T, self *testCase) *mworkflows.Client {
+			wf := new(mworkflows.Client)
+			id := identity.FromContext(self.CTX)
+			wf.On("SubmitAuditLog",
+				self.CTX,
+				mock.AnythingOfType("workflows.AuditLog")).
+				Run(func(args mock.Arguments) {
+					al, ok := args.Get(1).(workflows.AuditLog)
+					if assert.True(t, ok) {
+						assert.Equal(t, id.Subject, al.Actor.ID)
+						assert.Equal(t, self.DeviceID, al.Object.ID)
+						assert.WithinDuration(t, time.Now(), al.EventTS, 5*time.Minute)
+					}
+				}).Return(errors.New("internal error")).Once()
+			return wf
+		},
+
+		Error: errors.New("failed to submit audit log for updating " +
+			"the device configuration: internal error"),
+	}, {
+		Name: "error/internal",
+
+		CTX:      context.Background(),
+		DeviceID: "e1ce5c7a-5819-4ee1-aff7-f4fb0b50009c",
+		Attrs: model.Attributes{{
+			Key:   "key",
+			Value: "value",
+		}},
+
+		Store: func(t *testing.T, self *testCase) *mstore.DataStore {
+			store := new(mstore.DataStore)
+			store.On("UpdateConfiguration",
+				contextMatcher,
+				self.DeviceID,
+				self.Attrs,
+			).Return(errors.New("internal error")).Once()
+			return store
+		},
+		Wf: func(t *testing.T, self *testCase) *mworkflows.Client {
+			return new(mworkflows.Client)
+		},
+
+		Error: errors.New("internal error"),
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			ds := tc.Store(t, &tc)
+			wf := tc.Wf(t, &tc)
+			defer ds.AssertExpectations(t)
+			defer wf.AssertExpectations(t)
+
+			app := New(ds, nil, wf, Config{HaveAuditLogs: true})
+			err := app.UpdateConfiguration(tc.CTX, tc.DeviceID, tc.Attrs)
+			if tc.Error != nil {
+				if assert.Error(t, err) {
+					assert.Regexp(t, tc.Error.Error(), err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestSetConfigurationWithAuditLogs(t *testing.T) {
@@ -256,7 +420,7 @@ func TestSetConfigurationWithAuditLogs(t *testing.T) {
 			ds := new(mstore.DataStore)
 			defer ds.AssertExpectations(t)
 			ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-			ds.On("UpsertConfiguration", ctx, deviceMatcher).Return(nil)
+			ds.On("ReplaceConfiguration", ctx, deviceMatcher).Return(nil)
 
 			wflows := &mworkflows.Client{}
 			defer wflows.AssertExpectations(t)
@@ -333,7 +497,7 @@ func TestSetReportedConfiguration(t *testing.T) {
 	ds := new(mstore.DataStore)
 	defer ds.AssertExpectations(t)
 	ds.On("InsertDevice", ctx, deviceMatcher).Return(nil)
-	ds.On("UpsertReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
+	ds.On("ReplaceReportedConfiguration", ctx, deviceMatcherReport).Return(nil)
 	ds.On("GetDevice", ctx, dev.ID).Return(device, nil)
 
 	app := New(ds, nil, nil, Config{})

@@ -20,10 +20,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/mendersoftware/deviceconfig/app"
 	"github.com/mendersoftware/go-lib-micro/accesslog"
 	"github.com/mendersoftware/go-lib-micro/identity"
 	"github.com/mendersoftware/go-lib-micro/requestid"
+
+	"github.com/mendersoftware/deviceconfig/app"
 )
 
 // API URL used by the HTTP router
@@ -33,6 +34,7 @@ const (
 	URIManagement = "/api/management/v1/deviceconfig"
 
 	URITenants       = "/tenants"
+	URITenant        = "/tenants/:tenant_id"
 	URITenantDevices = "/tenants/:tenant_id/devices"
 	URITenantDevice  = "/tenants/:tenant_id/devices/:device_id"
 
@@ -70,6 +72,8 @@ func NewRouter(app app.App) http.Handler {
 	intrnlGrp.POST(URITenants, intrnlAPI.ProvisionTenant)
 	intrnlGrp.POST(URITenantDevices, intrnlAPI.ProvisionDevice)
 	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
+
+	intrnlGrp.PATCH(URITenant+URIConfiguration, intrnlAPI.UpdateConfiguration)
 
 	mgmtAPI := NewManagementAPI(app)
 	mgmtGrp := router.Group(URIManagement)

@@ -21,11 +21,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	mstore "github.com/mendersoftware/go-lib-micro/store"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	mopts "go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/mendersoftware/go-lib-micro/identity"
+	mstore "github.com/mendersoftware/go-lib-micro/store/v2"
 
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
@@ -41,6 +43,8 @@ const (
 	fieldUpdatedTs    = "updated_ts"
 	fieldReportedTs   = "reported_ts"
 	fieldDeploymentID = "deployment_id"
+
+	KeyTenantID = "tenant_id"
 )
 
 type MongoStoreConfig struct {
@@ -150,7 +154,7 @@ func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error 
 	}
 	collDevs := db.Database(ctx).Collection(CollDevices)
 
-	_, err := collDevs.InsertOne(ctx, dev)
+	_, err := collDevs.InsertOne(ctx, mstore.WithTenantID(ctx, dev))
 	if IsDuplicateKeyErr(err) {
 		return store.ErrDeviceAlreadyExists
 	}
@@ -158,7 +162,7 @@ func (db *MongoStore) InsertDevice(ctx context.Context, dev model.Device) error 
 	return errors.Wrap(err, "mongo: failed to store device configuration")
 }
 
-func (db *MongoStore) UpsertConfiguration(ctx context.Context, dev model.Device) error {
+func (db *MongoStore) ReplaceConfiguration(ctx context.Context, dev model.Device) error {
 	if err := dev.Validate(); err != nil {
 		return err
 	}
@@ -182,12 +186,15 @@ func (db *MongoStore) UpsertConfiguration(ctx context.Context, dev model.Device)
 		},
 	}
 
-	_, err := collDevs.UpdateOne(ctx, fltr, update, mopts.Update().SetUpsert(true))
+	_, err := collDevs.UpdateOne(ctx,
+		mstore.WithTenantID(ctx, fltr),
+		update,
+		mopts.Update().SetUpsert(true))
 
 	return errors.Wrap(err, "mongo: failed to store device configuration")
 }
 
-func (db *MongoStore) UpsertReportedConfiguration(ctx context.Context, dev model.Device) error {
+func (db *MongoStore) ReplaceReportedConfiguration(ctx context.Context, dev model.Device) error {
 	if err := dev.Validate(); err != nil {
 		return err
 	}
@@ -211,8 +218,88 @@ func (db *MongoStore) UpsertReportedConfiguration(ctx context.Context, dev model
 		},
 	}
 
-	_, err := collDevs.UpdateOne(ctx, fltr, update, mopts.Update().SetUpsert(true))
+	_, err := collDevs.UpdateOne(ctx,
+		mstore.WithTenantID(ctx, fltr),
+		update,
+		mopts.Update().SetUpsert(true))
 	return errors.Wrap(err, "mongo: failed to store device reported configuration")
+}
+
+func (db *MongoStore) UpdateConfiguration(
+	ctx context.Context,
+	devID string,
+	attrs model.Attributes,
+) error {
+	if len(attrs) == 0 {
+		return nil
+	} else if err := attrs.Validate(); err != nil {
+		return err
+	}
+	var tenantID string
+	if id := identity.FromContext(ctx); id != nil {
+		tenantID = id.Tenant
+	}
+	collDevs := db.Database(ctx).Collection(CollDevices)
+	attrKeys := make([]string, len(attrs))
+	for i, attr := range attrs {
+		attrKeys[i] = attr.Key
+	}
+
+	fltr := bson.D{{
+		Key:   fieldID,
+		Value: devID,
+	}, {
+		Key:   mstore.FieldTenantID,
+		Value: tenantID,
+	}, {
+		Key: fieldConfigured,
+		Value: bson.D{{
+			Key: "$exists", Value: true,
+		}},
+	}}
+	bwm := []mongo.WriteModel{
+		mongo.NewUpdateOneModel().
+			SetFilter(fltr).
+			SetUpdate(bson.D{{
+				Key: "$pull",
+				Value: bson.D{{
+					Key: fieldConfigured,
+					Value: bson.D{{Key: "key", Value: bson.D{{
+						Key:   "$in",
+						Value: attrKeys,
+					}}}},
+				}},
+			}}),
+		mongo.NewUpdateOneModel().
+			SetUpsert(true).
+			SetFilter(fltr[:2]).
+			SetUpdate(bson.D{{
+				Key: "$set", Value: bson.D{{
+					Key:   fieldUpdatedTs,
+					Value: time.Now().UTC(),
+				}},
+			}, {
+				Key: "$push",
+				Value: bson.D{{
+					Key: fieldConfigured,
+					Value: bson.D{{
+						Key:   "$each",
+						Value: attrs,
+					}, {
+						// Enforce validation constraint
+						Key:   "$slice",
+						Value: model.AttributesMaxLength,
+					}},
+				}},
+			}}),
+	}
+	_, err := collDevs.BulkWrite(ctx,
+		bwm,
+		mopts.BulkWrite().
+			SetOrdered(true),
+	)
+
+	return errors.Wrap(err, "mongo: failed to update configuration")
 }
 
 func (db *MongoStore) SetDeploymentID(ctx context.Context, devID string,
@@ -233,7 +320,7 @@ func (db *MongoStore) SetDeploymentID(ctx context.Context, devID string,
 		},
 	}
 
-	res, err := collDevs.UpdateOne(ctx, fltr, update, mopts.Update())
+	res, err := collDevs.UpdateOne(ctx, mstore.WithTenantID(ctx, fltr), update, mopts.Update())
 	if err != nil {
 		return errors.Wrap(err, "mongo: failed to set the deployment ID")
 	} else if res.MatchedCount == 0 {
@@ -249,7 +336,7 @@ func (db *MongoStore) DeleteDevice(ctx context.Context, devID string) error {
 		Key:   fieldID,
 		Value: devID,
 	}}
-	res, err := collDevs.DeleteOne(ctx, fltr)
+	res, err := collDevs.DeleteOne(ctx, mstore.WithTenantID(ctx, fltr))
 
 	if res != nil && res.DeletedCount == 0 {
 		return errors.Wrap(store.ErrDeviceNoExist, "mongo")
@@ -264,7 +351,7 @@ func (db *MongoStore) GetDevice(ctx context.Context, devID string) (model.Device
 		Key:   fieldID,
 		Value: devID,
 	}}
-	res := collDevs.FindOne(ctx, fltr)
+	res := collDevs.FindOne(ctx, mstore.WithTenantID(ctx, fltr))
 
 	var device model.Device
 

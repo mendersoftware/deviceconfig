@@ -25,7 +25,7 @@ import (
 
 const (
 	// DbVersion is the current schema version
-	DbVersion = "0.0.0"
+	DbVersion = "1.0.0"
 
 	// DbName is the database name
 	DbName = "deviceconfig"
@@ -64,7 +64,12 @@ func (db *MongoStore) Migrate(ctx context.Context, version string, automigrate b
 			Db:          DBName,
 			Automigrate: automigrate,
 		}
-		migrations := []migrate.Migration{}
+		migrations := []migrate.Migration{
+			&migration_1_0_0{
+				client: db.client,
+				db:     DBName,
+			},
+		}
 		err = m.Apply(ctx, *ver, migrations)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply migrations")

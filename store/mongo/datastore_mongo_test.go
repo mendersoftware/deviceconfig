@@ -17,7 +17,9 @@ package mongo
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -29,6 +31,38 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type contextExpireAfterX struct {
+	context.Context
+	x    int64
+	done chan struct{}
+	err  error
+}
+
+func newContextExpireAfterX(x int) context.Context {
+	return &contextExpireAfterX{
+		Context: context.Background(),
+		x:       int64(x),
+		done:    make(chan struct{}),
+	}
+}
+
+func (ctx *contextExpireAfterX) Done() <-chan struct{} {
+	n := atomic.AddInt64(&ctx.x, -1)
+	if n <= 0 {
+		select {
+		case <-ctx.done:
+		default:
+			close(ctx.done)
+		}
+		ctx.err = context.DeadlineExceeded
+	}
+	return ctx.done
+}
+
+func (ctx *contextExpireAfterX) Err() error {
+	return ctx.err
+}
 
 func ptrNow() *time.Time {
 	now := time.Now()
@@ -375,7 +409,7 @@ func TestGetDevice(t *testing.T) {
 	}
 }
 
-func TestUpsertConfiguration(t *testing.T) {
+func TestReplaceConfiguration(t *testing.T) {
 	t.Parallel()
 	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String()
 	testCases := []struct {
@@ -477,7 +511,7 @@ func TestUpsertConfiguration(t *testing.T) {
 			}
 
 			for _, dev := range tc.Devices {
-				err = ds.UpsertConfiguration(tc.CTX, dev)
+				err = ds.ReplaceConfiguration(tc.CTX, dev)
 				if err != nil {
 					if tc.Error != nil {
 						assert.EqualError(t, tc.Error, err.Error())
@@ -495,7 +529,7 @@ func TestUpsertConfiguration(t *testing.T) {
 			}
 
 			for _, dev := range tc.UpdatedDevices {
-				err = ds.UpsertConfiguration(tc.CTX, dev)
+				err = ds.ReplaceConfiguration(tc.CTX, dev)
 				if err != nil {
 					break
 				}
@@ -513,7 +547,135 @@ func TestUpsertConfiguration(t *testing.T) {
 	}
 }
 
-func TestUpsertReportedConfiguration(t *testing.T) {
+func TestUpdateConfiguration(t *testing.T) {
+	t.Parallel()
+	var testSet = []model.Device{{
+		ID:        uuid.NewSHA1(uuid.NameSpaceOID, []byte("0")).String(),
+		UpdatedTS: ptrNow(),
+	}, {
+		ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("1")).String(),
+		ConfiguredAttributes: model.Attributes{{
+			Key:   "key0",
+			Value: "value0",
+		}},
+		ReportedAttributes: model.Attributes{{
+			Key:   "key0",
+			Value: "value0",
+		}},
+		UpdatedTS: ptrNow(),
+	}, {
+		ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("2")).String(),
+		ConfiguredAttributes: model.Attributes{{
+			Key:   "foo",
+			Value: "bar",
+		}},
+		ReportedAttributes: model.Attributes{},
+		UpdatedTS:          ptrNow(),
+	}}
+	testCases := []struct {
+		Name string
+
+		CTX            context.Context
+		Devices        []model.Device
+		UpdatedDevices []model.Device
+
+		Error       error
+		ErrorUpdate error
+	}{{
+		Name: "ok new configured set",
+
+		UpdatedDevices: []model.Device{{
+			ID: uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
+			ConfiguredAttributes: model.Attributes{
+				{
+					Key:   "key0",
+					Value: "value0",
+				},
+			},
+			UpdatedTS: ptrNow(),
+		}},
+	}, {
+		Name: "ok update configured attribute",
+
+		UpdatedDevices: []model.Device{{
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("1")).String(),
+			ConfiguredAttributes: model.Attributes{{
+				Key:   "key1",
+				Value: "value1",
+			}},
+			UpdatedTS: ptrNow(),
+		}},
+	}, {
+		Name: "error/too many attributes",
+
+		UpdatedDevices: []model.Device{{
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte("1")).String(),
+			ConfiguredAttributes: func() model.Attributes {
+				attrs := make(model.Attributes, model.AttributesMaxLength+2)
+				for i := range attrs {
+					attrs[i] = model.Attribute{
+						Key:   fmt.Sprintf("key%d", i),
+						Value: fmt.Sprintf("value%d", i),
+					}
+				}
+				return attrs
+			}(),
+			UpdatedTS: ptrNow(),
+		}},
+
+		ErrorUpdate: errors.New("too many configuration attributes, maximum is 100"),
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			var err error
+			ctx := context.Background()
+
+			ds := GetTestDataStore(t)
+			if tc.CTX == nil {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				defer cancel()
+				tc.CTX = ctx
+			}
+			defer ds.DropDatabase(ctx)
+
+			for _, dev := range testSet {
+				err = ds.UpdateConfiguration(tc.CTX, dev.ID, dev.ConfiguredAttributes)
+				if tc.Error != nil {
+					if assert.Error(t, err) {
+						assert.Regexp(t, tc.Error.Error(), err.Error())
+					}
+					return
+				} else {
+					require.NoError(t, err)
+
+				}
+			}
+
+			for _, dev := range tc.UpdatedDevices {
+				err = ds.UpdateConfiguration(tc.CTX, dev.ID, dev.ConfiguredAttributes)
+				if tc.ErrorUpdate != nil {
+					require.Error(t, err)
+					assert.Regexp(t, tc.ErrorUpdate.Error(), err.Error())
+					return
+				}
+			}
+			for _, dev := range tc.UpdatedDevices {
+				d, err := ds.GetDevice(tc.CTX, dev.ID)
+				assert.NoError(t, err)
+				assert.Equal(t, dev.ID, d.ID)
+				for _, attr := range dev.ConfiguredAttributes {
+					assert.Contains(t, d.ConfiguredAttributes, attr)
+				}
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestReplaceReportedConfiguration(t *testing.T) {
 	t.Parallel()
 	deviceID := uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String()
 	testCases := []struct {
@@ -613,7 +775,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 			}
 
 			for _, dev := range tc.Devices {
-				err = ds.UpsertReportedConfiguration(tc.CTX, dev)
+				err = ds.ReplaceReportedConfiguration(tc.CTX, dev)
 				if err != nil {
 					if tc.Error != nil {
 						assert.EqualError(t, tc.Error, err.Error())
@@ -631,7 +793,7 @@ func TestUpsertReportedConfiguration(t *testing.T) {
 			}
 
 			for _, dev := range tc.UpdatedDevices {
-				err = ds.UpsertReportedConfiguration(tc.CTX, dev)
+				err = ds.ReplaceReportedConfiguration(tc.CTX, dev)
 				if err != nil {
 					break
 				}

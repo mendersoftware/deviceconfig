@@ -47,6 +47,7 @@ type App interface {
 	DecommissionDevice(ctx context.Context, devID string) error
 
 	SetConfiguration(ctx context.Context, devID string, configuration model.Attributes) error
+	UpdateConfiguration(ctx context.Context, devID string, attrs model.Attributes) error
 	SetReportedConfiguration(ctx context.Context, devID string, configuration model.Attributes) error
 	GetDevice(ctx context.Context, devID string) (model.Device, error)
 	DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
@@ -110,7 +111,7 @@ func (a *app) SetConfiguration(ctx context.Context,
 	devID string,
 	configuration model.Attributes) error {
 	now := time.Now()
-	err := a.store.UpsertConfiguration(ctx, model.Device{
+	err := a.store.ReplaceConfiguration(ctx, model.Device{
 		ID:                   devID,
 		ConfiguredAttributes: configuration,
 		UpdatedTS:            &now,
@@ -147,11 +148,48 @@ func (a *app) SetConfiguration(ctx context.Context,
 	return nil
 }
 
+func (a *app) UpdateConfiguration(
+	ctx context.Context,
+	devID string,
+	attrs model.Attributes,
+) error {
+	err := a.store.UpdateConfiguration(ctx, devID, attrs)
+	if err != nil {
+		return err
+	}
+	if identity := identity.FromContext(ctx); identity != nil &&
+		identity.IsUser && a.HaveAuditLogs {
+		userID := identity.Subject
+		configuration, err := attrs.MarshalJSON()
+		if err == nil {
+			err = a.workflows.SubmitAuditLog(ctx, workflows.AuditLog{
+				Action: workflows.ActionSetConfiguration,
+				Actor: workflows.Actor{
+					ID:   userID,
+					Type: workflows.ActorUser,
+				},
+				Object: workflows.Object{
+					ID:   devID,
+					Type: workflows.ObjectDevice,
+				},
+				Change:  string(configuration),
+				EventTS: time.Now(),
+			})
+		}
+		if err != nil {
+			return errors.Wrap(err,
+				"failed to submit audit log for updating the device configuration",
+			)
+		}
+	}
+	return nil
+}
+
 func (a *app) SetReportedConfiguration(ctx context.Context,
 	devID string,
 	configuration model.Attributes) error {
 	now := time.Now()
-	return a.store.UpsertReportedConfiguration(ctx, model.Device{
+	return a.store.ReplaceReportedConfiguration(ctx, model.Device{
 		ID:                 devID,
 		ReportedAttributes: configuration,
 		ReportTS:           &now,

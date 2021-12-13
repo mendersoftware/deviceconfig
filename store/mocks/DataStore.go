@@ -149,6 +149,34 @@ func (_m *DataStore) Ping(ctx context.Context) error {
 	return r0
 }
 
+// ReplaceConfiguration provides a mock function with given fields: ctx, dev
+func (_m *DataStore) ReplaceConfiguration(ctx context.Context, dev model.Device) error {
+	ret := _m.Called(ctx, dev)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, model.Device) error); ok {
+		r0 = rf(ctx, dev)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ReplaceReportedConfiguration provides a mock function with given fields: ctx, dev
+func (_m *DataStore) ReplaceReportedConfiguration(ctx context.Context, dev model.Device) error {
+	ret := _m.Called(ctx, dev)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, model.Device) error); ok {
+		r0 = rf(ctx, dev)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SetDeploymentID provides a mock function with given fields: ctx, devID, deploymentID
 func (_m *DataStore) SetDeploymentID(ctx context.Context, devID string, deploymentID uuid.UUID) error {
 	ret := _m.Called(ctx, devID, deploymentID)
@@ -163,27 +191,13 @@ func (_m *DataStore) SetDeploymentID(ctx context.Context, devID string, deployme
 	return r0
 }
 
-// UpsertConfiguration provides a mock function with given fields: ctx, dev
-func (_m *DataStore) UpsertConfiguration(ctx context.Context, dev model.Device) error {
-	ret := _m.Called(ctx, dev)
+// UpdateConfiguration provides a mock function with given fields: ctx, deviceID, attrs
+func (_m *DataStore) UpdateConfiguration(ctx context.Context, deviceID string, attrs model.Attributes) error {
+	ret := _m.Called(ctx, deviceID, attrs)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, model.Device) error); ok {
-		r0 = rf(ctx, dev)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// UpsertReportedConfiguration provides a mock function with given fields: ctx, dev
-func (_m *DataStore) UpsertReportedConfiguration(ctx context.Context, dev model.Device) error {
-	ret := _m.Called(ctx, dev)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, model.Device) error); ok {
-		r0 = rf(ctx, dev)
+	if rf, ok := ret.Get(0).(func(context.Context, string, model.Attributes) error); ok {
+		r0 = rf(ctx, deviceID, attrs)
 	} else {
 		r0 = ret.Error(0)
 	}
