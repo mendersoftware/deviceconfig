@@ -684,3 +684,57 @@ func TestDecommissionDevice(t *testing.T) {
 		})
 	}
 }
+
+func TestInternalDeployConfiguration(t *testing.T) {
+	// Keep the test brief since the rest is covered in management_test.go
+	tenantID := "1123456789012345678901234"
+	device := model.Device{
+		ID: "6aff21b7-7b88-4182-98df-9b9df7787d67",
+	}
+	deploymentConfig := model.DeployConfigurationResponse{
+		DeploymentID: uuid.New(),
+	}
+	contextMatcher := mock.MatchedBy(func(ctx context.Context) bool {
+		id := identity.FromContext(ctx)
+		if !assert.NotNil(t, id) {
+			return false
+		}
+		return assert.Equal(t, tenantID, id.Tenant)
+	})
+	deplReq := model.DeployConfigurationRequest{
+		Retries: 1,
+	}
+	b, _ := json.Marshal(deplReq)
+
+	app := new(mapp.App)
+	app.On("GetDevice", contextMatcher, device.ID).
+		Return(device, nil).
+		On("DeployConfiguration",
+			contextMatcher,
+			device,
+			deplReq,
+		).
+		Return(deploymentConfig, nil)
+
+	router := NewRouter(app)
+	repl := strings.NewReplacer(
+		":"+pathParamTenantID,
+		tenantID,
+		":"+pathParamDeviceID,
+		device.ID,
+	)
+	req, _ := http.NewRequest(
+		http.MethodPost,
+		URIInternal+repl.Replace(URITenant+URIDeployConfiguration),
+		bytes.NewReader(b),
+	)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	assert.Equalf(t,
+		http.StatusOK,
+		w.Code,
+		"unexpected HTTP status code: request body: '%s'",
+		w.Body.String(),
+	)
+}

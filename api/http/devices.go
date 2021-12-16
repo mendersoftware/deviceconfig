@@ -27,9 +27,8 @@ import (
 	"github.com/mendersoftware/deviceconfig/store"
 )
 
-type DevicesAPI struct {
-	App app.App
-}
+// DevicesAPI is a namespace for the APIHandler
+type DevicesAPI APIHandler
 
 var errInvalidIdentity = errors.New("forbidden: invalid identity data")
 

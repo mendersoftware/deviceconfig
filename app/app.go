@@ -23,7 +23,6 @@ import (
 
 	"github.com/mendersoftware/go-lib-micro/identity"
 
-	"github.com/mendersoftware/deviceconfig/client/inventory"
 	"github.com/mendersoftware/deviceconfig/client/workflows"
 	"github.com/mendersoftware/deviceconfig/model"
 	"github.com/mendersoftware/deviceconfig/store"
@@ -51,14 +50,11 @@ type App interface {
 	SetReportedConfiguration(ctx context.Context, devID string, configuration model.Attributes) error
 	GetDevice(ctx context.Context, devID string) (model.Device, error)
 	DeployConfiguration(ctx context.Context, device model.Device, request model.DeployConfigurationRequest) (model.DeployConfigurationResponse, error)
-
-	AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error)
 }
 
 // app is an app object
 type app struct {
 	store     store.DataStore
-	inventory inventory.Client
 	workflows workflows.Client
 	Config
 }
@@ -68,7 +64,7 @@ type Config struct {
 }
 
 // NewApp initialize a new deviceconfig App
-func New(ds store.DataStore, inv inventory.Client, wf workflows.Client, config ...Config) App {
+func New(ds store.DataStore, wf workflows.Client, config ...Config) App {
 	conf := Config{}
 	for _, cfgIn := range config {
 		if cfgIn.HaveAuditLogs {
@@ -77,7 +73,6 @@ func New(ds store.DataStore, inv inventory.Client, wf workflows.Client, config .
 	}
 	return &app{
 		store:     ds,
-		inventory: inv,
 		workflows: wf,
 		Config:    conf,
 	}
@@ -208,7 +203,7 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 		return response, err
 	}
 	identity := identity.FromContext(ctx)
-	if identity == nil || !identity.IsUser {
+	if identity == nil {
 		return response, errors.New("identity missing from the context")
 	}
 	deploymentID := uuid.New()
@@ -244,8 +239,4 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 		}
 	}
 	return response, nil
-}
-
-func (a *app) AreDevicesInGroup(ctx context.Context, devices []string, group string) (bool, error) {
-	return a.inventory.AreDevicesInGroup(ctx, devices, group)
 }
