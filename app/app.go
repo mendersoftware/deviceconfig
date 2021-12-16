@@ -208,7 +208,7 @@ func (a *app) DeployConfiguration(ctx context.Context, device model.Device,
 		return response, err
 	}
 	identity := identity.FromContext(ctx)
-	if identity == nil || !identity.IsUser {
+	if identity == nil {
 		return response, errors.New("identity missing from the context")
 	}
 	deploymentID := uuid.New()
