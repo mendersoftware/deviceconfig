@@ -28,9 +28,8 @@ import (
 	"github.com/mendersoftware/deviceconfig/store"
 )
 
-type InternalAPI struct {
-	App app.App
-}
+// InteralAPI is a namespace for the internal API handlers.
+type InternalAPI APIHandler
 
 func NewInternalAPI(app app.App) *InternalAPI {
 	return &InternalAPI{
@@ -186,4 +185,15 @@ func (api *InternalAPI) DecommissionDevice(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+func (api *InternalAPI) DeployConfiguration(c *gin.Context) {
+	ctx := c.Request.Context()
+	ctx = identity.WithContext(ctx, &identity.Identity{
+		Subject: c.Param(pathParamDeviceID),
+		Tenant:  c.Param(pathParamTenantID),
+	})
+	c.Request = c.Request.WithContext(ctx)
+	mgmtAPI := (*ManagementAPI)(api)
+	mgmtAPI.DeployConfiguration(c)
 }

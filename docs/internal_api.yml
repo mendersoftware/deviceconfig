@@ -124,6 +124,57 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 
+  /tenants/{tenantId}/configurations/device/{deviceId}/deploy:
+    post:
+      operationId: Deploy Device Configuration
+      tags:
+        - Internal API
+      summary: Deploy the device's configuration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewConfigurationDeployment'
+      parameters:
+        - in: path
+          name: deviceId
+          schema:
+            type: string
+          required: true
+          description: ID of the device.
+        - in: path
+          name: tenantId
+          schema:
+            type: string
+          required: true
+          description: ID of the tenant.
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewConfigurationDeploymentResponse'
+        400:
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Not Found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
 components:
 
   schemas:
@@ -161,6 +212,28 @@ components:
           description: ID of the new device.
       required:
         - device_id
+
+    NewConfigurationDeployment:
+      type: object
+      properties:
+        retries:
+          type: integer
+          description: The number of times a device can retry the deployment in case of failure, defaults to 0
+          default: 0
+        update_control_map:
+          x-mender-plan: ["enterprise"]
+          type: object
+          additionalProperties: true
+          description: |
+              A valid JSON object defining the update control map.
+              *NOTE*: Available only in the Enterprise plan.
+
+    NewConfigurationDeploymentResponse:
+      type: object
+      properties:
+        deployment_id:
+          type: string
+          description: Deployment ID
 
 
   responses:
