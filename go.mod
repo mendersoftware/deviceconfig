@@ -10,7 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5
-	go.mongodb.org/mongo-driver v1.7.4
+	go.mongodb.org/mongo-driver v1.8.3
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
 )
