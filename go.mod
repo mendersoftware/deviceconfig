@@ -3,7 +3,7 @@ module github.com/mendersoftware/deviceconfig
 go 1.15
 
 require (
-	github.com/gin-gonic/gin v1.7.4
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/google/uuid v1.3.0
 	github.com/mendersoftware/go-lib-micro v0.0.0-20211108084650-4e20429b1ac8
