@@ -1,14 +1,16 @@
 version: '2.1'
 services:
 
-    acceptance:
+    tester:
         image: mendersoftware/mender-test-containers:acceptance-testing
         networks:
             - mender
         volumes:
             - ".:/testing"
+            - "/var/run/docker.sock:/var/run/docker.sock"
         depends_on:
             - mender-deviceconfig
+            - mender-mongo
             - mmock
 
     mender-deviceconfig:
@@ -22,6 +24,7 @@ services:
             - mender-deviceconfig
       volumes:
         - ".:/testing"
+      working_dir: /testing
       depends_on:
         - mender-mongo
 
