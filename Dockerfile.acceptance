@@ -1,4 +1,4 @@
-FROM golang:1.16.5-alpine3.12 as builder
+FROM golang:1.17.6-alpine3.15 as builder
 RUN apk add --no-cache \
     xz-dev \
     musl-dev \
@@ -13,11 +13,10 @@ FROM alpine:3.15.0
 RUN apk add --no-cache ca-certificates xz
 RUN mkdir -p /etc/deviceconfig
 COPY ./config.yaml /etc/deviceconfig
-COPY --from=builder /go/src/github.com/mendersoftware/deviceconfig/bin/deviceconfig.test /usr/bin
-ENTRYPOINT ["/usr/bin/deviceconfig.test", \
-        "-test.coverprofile=/testing/coverage-acceptance.txt", \
-        "-acceptance-testing", \
-        "--", "--config=/etc/deviceconfig/config.yaml", \
+COPY --from=builder /go/src/github.com/mendersoftware/deviceconfig/bin/deviceconfig.test \
+    /usr/bin/deviceconfig
+ENTRYPOINT ["/usr/bin/deviceconfig", \
+        "--config=/etc/deviceconfig/config.yaml", \
         "server", "--automigrate"]
 
 EXPOSE 8080

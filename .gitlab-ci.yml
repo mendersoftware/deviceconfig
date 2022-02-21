@@ -35,17 +35,21 @@ test:acceptance:
     - /^saas-[a-zA-Z0-9.-]+$/
   tags:
     - docker
-  image: docker:19.03.13
+  image: docker:20.10.12
   services:
-    - name: docker:19.03.13-dind
+    - name: docker:20.10.12-dind
       alias: docker
   before_script:
     - apk add docker-compose make
   script:
     - make acceptance-tests
   after_script:
-    - make acceptance-tests-logs
-    - make acceptance-tests-down
+    - set -- tests/coverage-acceptance@*.txt
+    - head -n 1 $1 > tests/coverage-acceptance.txt
+    - |
+      for cover in $@; do
+        tail -n +2 $cover >> tests/coverage-acceptance.txt;
+      done
   artifacts:
     expire_in: 2w
     paths:
@@ -57,7 +61,7 @@ publish:acceptance:
   stage: publish
   except:
     - /^saas-[a-zA-Z0-9.-]+$/
-  image: golang:1.15
+  image: golang:1.17
   needs:
     - job: test:acceptance
       artifacts: true
@@ -71,7 +75,6 @@ publish:acceptance:
     #  and pass few others as command line arguments.
     #  See also https://docs.coveralls.io/api-reference
     - export CI_BRANCH=${CI_COMMIT_BRANCH}
-    - export CI_PR_NUMBER=${CI_COMMIT_BRANCH#pr_}
   script:
     - goveralls
       -repotoken ${COVERALLS_TOKEN}
