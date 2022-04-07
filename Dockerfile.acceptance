@@ -1,23 +1,22 @@
 FROM golang:1.17.6-alpine3.15 as builder
+WORKDIR /go/src/github.com/mendersoftware/deviceconfig
 RUN apk add --no-cache \
     xz-dev \
     musl-dev \
     gcc \
-    make
-RUN mkdir -p /go/src/github.com/mendersoftware/deviceconfig
-COPY . /go/src/github.com/mendersoftware/deviceconfig
-RUN cd /go/src/github.com/mendersoftware/deviceconfig && \
-    make build-test
+    make \
+    ca-certificates
+COPY ./ .
+RUN make build-test
 
-FROM alpine:3.15.0
-RUN apk add --no-cache ca-certificates xz
-RUN mkdir -p /etc/deviceconfig
-COPY ./config.yaml /etc/deviceconfig
+FROM scratch
+WORKDIR /etc/deviceconfig
+EXPOSE 8080
+COPY ./config.yaml .
 COPY --from=builder /go/src/github.com/mendersoftware/deviceconfig/bin/deviceconfig.test \
     /usr/bin/deviceconfig
 ENTRYPOINT ["/usr/bin/deviceconfig", \
         "--config=/etc/deviceconfig/config.yaml", \
         "server", "--automigrate"]
 
-EXPOSE 8080
 STOPSIGNAL SIGINT
