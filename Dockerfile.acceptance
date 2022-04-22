@@ -7,7 +7,7 @@ RUN apk add --no-cache \
     make \
     ca-certificates
 COPY ./ .
-RUN make build-test
+RUN CGO_ENABLED=0 make build-test
 
 FROM scratch
 WORKDIR /etc/deviceconfig
