@@ -42,6 +42,7 @@ test:acceptance:
   before_script:
     - apk add docker-compose make
   script:
+    - adduser -DH -G docker acctests
     - make acceptance-tests
   after_script:
     - set -- tests/coverage-acceptance@*.txt

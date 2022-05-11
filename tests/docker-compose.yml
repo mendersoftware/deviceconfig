@@ -14,6 +14,7 @@ services:
             - mmock
 
     mender-deviceconfig:
+      user: acctests
       image: mendersoftware/deviceconfig:prtest
       environment:
         DEVICECONFIG_ENABLE_AUDIT: "true"
