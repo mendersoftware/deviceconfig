@@ -1,4 +1,4 @@
-// Copyright 2021 Northern.tech AS
+// Copyright 2022 Northern.tech AS
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package mongo
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,20 +32,35 @@ type index struct {
 	ExpireAfter *int           `bson:"expireAfterSeconds"`
 }
 
-func TestMigration_1_0_0(t *testing.T) {
-	m := &migration_1_0_0{
+func TestMigration_1_0_1(t *testing.T) {
+
+	collDevs := client.Database(DbName).
+		Collection(CollDevices)
+	ctx := context.Background()
+
+	_, err := collDevs.InsertMany(ctx, func() []interface{} {
+		ret := make([]interface{}, findBatchSize+1)
+		for i := range ret {
+			ret[i] = bson.D{}
+		}
+		return ret
+	}())
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	m := &migration_1_0_1{
 		client: client,
 		db:     DbName,
 	}
 	from := migrate.MakeVersion(0, 0, 0)
 
-	err := m.Up(from)
+	err = m.Up(from)
 	require.NoError(t, err)
 
 	iv := client.Database(DbName).
 		Collection(CollDevices).
 		Indexes()
-	ctx := context.Background()
 	cur, err := iv.List(ctx)
 	require.NoError(t, err)
 
@@ -68,5 +84,10 @@ func TestMigration_1_0_0(t *testing.T) {
 			assert.Failf(t, "index test failed", "Index name \"%s\" not recognized", idx.Name)
 		}
 	}
-	assert.Equal(t, "1.0.0", m.Version().String())
+	assert.Equal(t, "1.0.1", m.Version().String())
+	actual, err := collDevs.CountDocuments(ctx, bson.D{
+		{Key: mstore.FieldTenantID, Value: bson.D{{Key: "$exists", Value: false}}},
+	})
+	require.NoError(t, err)
+	assert.Zerof(t, actual, "%d documents are not indexed by tenant_id", actual)
 }
