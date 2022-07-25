@@ -1,4 +1,4 @@
-// Copyright 2021 Northern.tech AS
+// Copyright 2022 Northern.tech AS
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 
 const (
 	// DbVersion is the current schema version
-	DbVersion = "1.0.0"
+	DbVersion = "1.0.1"
 
 	// DbName is the database name
 	DbName = "deviceconfig"
@@ -65,7 +65,7 @@ func (db *MongoStore) Migrate(ctx context.Context, version string, automigrate b
 			Automigrate: automigrate,
 		}
 		migrations := []migrate.Migration{
-			&migration_1_0_0{
+			&migration_1_0_1{
 				client: db.client,
 				db:     DBName,
 			},
