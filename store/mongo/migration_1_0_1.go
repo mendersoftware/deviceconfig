@@ -1,4 +1,4 @@
-// Copyright 2021 Northern.tech AS
+// Copyright 2022 Northern.tech AS
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -31,12 +31,12 @@ const (
 	findBatchSize = 255
 )
 
-type migration_1_0_0 struct {
+type migration_1_0_1 struct {
 	client *mongo.Client
 	db     string
 }
 
-func (m *migration_1_0_0) Up(from migrate.Version) error {
+func (m *migration_1_0_1) Up(from migrate.Version) error {
 	ctx := context.Background()
 	client := m.client
 	collections := map[string]struct {
@@ -61,49 +61,57 @@ func (m *migration_1_0_0) Up(from migrate.Version) error {
 		Tenant: tenantID,
 	})
 
-	for collection := range collections {
-		// get all the documents in the collection
+	writes := make([]mongo.WriteModel, 0, findBatchSize)
+
+	for collection, idxes := range collections {
+		writes = writes[:0]
 		findOptions := mopts.Find().
 			SetBatchSize(findBatchSize).
 			SetSort(bson.D{{Key: fieldID, Value: 1}})
-		coll := client.Database(m.db).Collection(collection)
 		collOut := client.Database(DbName).Collection(collection)
-		_, err := collOut.Indexes().CreateMany(ctx, collections[collection].Indexes)
-		if err != nil {
-			return err
+		if m.db == DbName {
+			if len(idxes.Indexes) > 0 {
+				_, err := collOut.Indexes().CreateMany(ctx, collections[collection].Indexes)
+				if err != nil {
+					return err
+				}
+			}
+			_, err := collOut.UpdateMany(ctx, bson.D{
+				{Key: mstore.FieldTenantID, Value: bson.D{
+					{Key: "$exists", Value: false},
+				}},
+			}, bson.D{{Key: "$set", Value: bson.D{
+				{Key: mstore.FieldTenantID, Value: ""},
+			}}},
+			)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
+		coll := client.Database(m.db).Collection(collection)
+		// get all the documents in the collection
 		cur, err := coll.Find(ctx, bson.D{}, findOptions)
 		if err != nil {
 			return err
 		}
 		defer cur.Close(ctx)
 
-		writes := make([]mongo.WriteModel, 0, findBatchSize)
-
 		// migrate the documents
 		for cur.Next(ctx) {
-			item := bson.D{}
-			err := cur.Decode(&item)
-			if err != nil {
+			id := cur.Current.Lookup(fieldID)
+			var item bson.D
+			if err = cur.Decode(&item); err != nil {
 				return err
 			}
-
-			item = mstore.WithTenantID(ctx, item)
-			if m.db == DbName {
-				filter := bson.D{}
-				for _, i := range item {
-					if i.Key == fieldID {
-						filter = append(filter, i)
-					}
-				}
-				writes = append(writes,
-					mongo.NewReplaceOneModel().
-						SetFilter(filter).SetReplacement(item))
-			} else {
-				writes = append(writes, mongo.NewInsertOneModel().SetDocument(item))
-			}
+			writes = append(writes, mongo.
+				NewReplaceOneModel().
+				SetFilter(bson.D{{Key: fieldID, Value: id}}).
+				SetUpsert(true).
+				SetReplacement(mstore.WithTenantID(ctx, item)))
 			if len(writes) == findBatchSize {
+				_, err = collOut.BulkWrite(ctx, writes)
 				if err != nil {
 					return err
 				}
@@ -121,6 +129,6 @@ func (m *migration_1_0_0) Up(from migrate.Version) error {
 	return nil
 }
 
-func (m *migration_1_0_0) Version() migrate.Version {
-	return migrate.MakeVersion(1, 0, 0)
+func (m *migration_1_0_1) Version() migrate.Version {
+	return migrate.MakeVersion(1, 0, 1)
 }
