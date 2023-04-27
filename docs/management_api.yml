@@ -45,10 +45,8 @@ paths:
                     type: string
                     format: uuid
                   configured:
-                    type: object
                     $ref: '#/components/schemas/ManagementAPIConfiguration'
                   reported:
-                    type: object
                     $ref: '#/components/schemas/ManagementAPIConfiguration'
                   deployment_id:
                     description: ID of the latest configuration deployment
