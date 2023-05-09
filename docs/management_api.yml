@@ -39,25 +39,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  configured:
-                    $ref: '#/components/schemas/ManagementAPIConfiguration'
-                  reported:
-                    $ref: '#/components/schemas/ManagementAPIConfiguration'
-                  deployment_id:
-                    description: ID of the latest configuration deployment
-                    type: string
-                    format: uuid
-                  reported_ts:
-                    type: string
-                    format: date-time
-                  updated_ts:
-                    type: string
-                    format: date-time
+                $ref: '#/components/schemas/DeviceConfiguration'
         400:
           description: Bad Request.
           content:
@@ -191,6 +173,27 @@ components:
         deployment_id:
           type: string
           description: Deployment ID
+
+    DeviceConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        configured:
+          $ref: '#/components/schemas/ManagementAPIConfiguration'
+        reported:
+          $ref: '#/components/schemas/ManagementAPIConfiguration'
+        deployment_id:
+          description: ID of the latest configuration deployment
+          type: string
+          format: uuid
+        reported_ts:
+          type: string
+          format: date-time
+        updated_ts:
+          type: string
+          format: date-time
 
     Error:
       type: object
