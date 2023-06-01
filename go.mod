@@ -12,7 +12,7 @@ require (
 	github.com/urfave/cli v1.22.12
 	go.mongodb.org/mongo-driver v1.11.4
 	golang.org/x/net v0.9.0
-	golang.org/x/sys v0.7.0
+	golang.org/x/sys v0.8.0
 )
 
 require (
