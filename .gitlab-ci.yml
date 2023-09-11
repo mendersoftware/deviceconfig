@@ -6,6 +6,8 @@ variables:
   DOCKER_TLS_VERIFY: 1
 
   DOCKER_TLS_CERTDIR: "/certs" # Where docker:dind should generate certs
+  MULTIPLATFORM_BUILD: "true"
+  MULTIPLATFORM_PLATFORMS: "linux/amd64,linux/arm64"
 
 stages:
   - test
@@ -84,3 +86,19 @@ publish:acceptance:
       -flagname acceptance
       -parallel
       -coverprofile ./tests/coverage-acceptance.txt
+
+# excludes non multiplatform build job
+build:docker:
+  rules:
+    - when: never
+
+# excludes non multiplatform build job
+publish:image:
+  rules:
+    - when: never
+
+# excludes non multiplatform build job
+publish:image:mender:
+  rules:
+    - when: never
+
