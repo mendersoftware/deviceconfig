@@ -19,6 +19,7 @@ deviceconfig
 .vscode/
 .idea
 *.go.skip
+vendor
 
 # Python virtualenv
 venv/
