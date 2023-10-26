@@ -118,6 +118,7 @@ paths:
         - Management API
       summary: Deploy the device's configuration
       requestBody:
+        required: true
         content:
           application/json:
             schema:
