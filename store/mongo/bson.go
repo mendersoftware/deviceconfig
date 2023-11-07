@@ -22,7 +22,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/bson/bsonrw"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 var (
@@ -45,7 +44,7 @@ func uuidEncodeValue(ec bsoncodec.EncodeContext, w bsonrw.ValueWriter, val refle
 		}
 	}
 	uid := val.Interface().(uuid.UUID)
-	return w.WriteBinaryWithSubtype(uid[:], bsontype.BinaryUUID)
+	return w.WriteBinaryWithSubtype(uid[:], bson.TypeBinaryUUID)
 }
 
 func uuidDecodeValue(ec bsoncodec.DecodeContext, r bsonrw.ValueReader, val reflect.Value) error {
