@@ -40,6 +40,7 @@ const (
 )
 
 // Client is the workflows client
+//
 //go:generate ../../x/mockgen.sh
 type Client interface {
 	CheckHealth(ctx context.Context) error
