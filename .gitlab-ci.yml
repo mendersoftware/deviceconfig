@@ -97,8 +97,15 @@ publish:image:
   rules:
     - when: never
 
+# excludes non multiplatform job
+publish:image:saas:
+  rules:
+    - when: never
+
 # excludes non multiplatform build job
 publish:image:mender:
   rules:
     - when: never
 
+test:validate-open-api:
+  allow_failure: false
