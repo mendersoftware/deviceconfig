@@ -37,7 +37,7 @@ test:acceptance:
   except:
     - /^saas-[a-zA-Z0-9.-]+$/
   tags:
-    - docker
+    - hetzner-amd-beefy
   image: docker:20.10.21
   services:
     - name: docker:20.10.21-dind
@@ -64,12 +64,13 @@ publish:acceptance:
   stage: publish
   except:
     - /^saas-[a-zA-Z0-9.-]+$/
-  image: golang:1.17
+  image: golang:1.22
   needs:
     - job: test:acceptance
       artifacts: true
   before_script:
-    - GO111MODULE=off go get github.com/mattn/goveralls
+    - go get github.com/mattn/goveralls
+    - go install github.com/mattn/goveralls
     # Coveralls env variables:
     #  According to https://docs.coveralls.io/supported-ci-services
     #  we should set CI_NAME, CI_BUILD_NUMBER, etc. But according
