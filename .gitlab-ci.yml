@@ -31,6 +31,9 @@ include:
   - project: 'Northern.tech/Mender/mendertesting'
     file: '.gitlab-ci-check-docker-build.yml'
 
+.dind-login: &dind-login
+  - mkdir -p $HOME/.docker && echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
+
 test:acceptance:
   stage: test
   needs: []
@@ -38,12 +41,13 @@ test:acceptance:
     - /^saas-[a-zA-Z0-9.-]+$/
   tags:
     - hetzner-amd-beefy
-  image: docker:20.10.21
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:20.10.21
   services:
     - name: docker:20.10.21-dind
       alias: docker
   before_script:
     - apk add docker-compose make
+    - *dind-login
   script:
     - make acceptance-tests
   after_script:
@@ -64,7 +68,7 @@ publish:acceptance:
   stage: publish
   except:
     - /^saas-[a-zA-Z0-9.-]+$/
-  image: golang:1.22
+  image: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}/golang:1.22
   needs:
     - job: test:acceptance
       artifacts: true
