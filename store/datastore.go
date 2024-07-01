@@ -46,6 +46,9 @@ type DataStore interface {
 	// MigrateLatest calls Migrate with the latest schema version.
 	MigrateLatest(ctx context.Context) error
 
+	// DeleteTenant removes all the data for a given tenant
+	DeleteTenant(ctx context.Context, tenant_id string) error
+
 	// InsertDeviceConfig inserts a new device configuration
 	InsertDevice(ctx context.Context, dev model.Device) error
 

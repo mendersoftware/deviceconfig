@@ -84,6 +84,22 @@ func (api *InternalAPI) ProvisionTenant(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
+func (api *InternalAPI) DeleteTenant(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID := c.Param("tenant_id")
+
+	err := api.App.DeleteTenant(ctx, tenantID)
+	if err != nil {
+		c.Error(err) //nolint:errcheck
+		rest.RenderError(c,
+			http.StatusInternalServerError,
+			errors.New(http.StatusText(http.StatusInternalServerError)),
+		)
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (api *InternalAPI) ProvisionDevice(c *gin.Context) {
 	var dev model.NewDevice
 	ctx := c.Request.Context()

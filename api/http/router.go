@@ -85,6 +85,7 @@ func NewRouter(app app.App) http.Handler {
 	intrnlGrp.GET(URIHealth, intrnlAPI.Health)
 
 	intrnlGrp.POST(URITenants, intrnlAPI.ProvisionTenant)
+	intrnlGrp.DELETE(URITenant, intrnlAPI.DeleteTenant)
 	intrnlGrp.POST(URITenantDevices, intrnlAPI.ProvisionDevice)
 	intrnlGrp.DELETE(URITenantDevice, intrnlAPI.DecommissionDevice)
 

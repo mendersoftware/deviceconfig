@@ -17,6 +17,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -77,6 +78,52 @@ func TestProvisionTenant(t *testing.T) {
 	app := New(ds, nil, Config{})
 	err := app.ProvisionTenant(ctx, tenant)
 	assert.NoError(t, err)
+}
+
+func TestDeleteTenant(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		tenantId string
+
+		dbErr  error
+		outErr string
+	}{
+		{
+			tenantId: "tenant1",
+			dbErr:    errors.New("error"),
+		},
+		{
+			tenantId: "tenant2",
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("tc %d", i), func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+
+			ds := new(mstore.DataStore)
+			defer ds.AssertExpectations(t)
+			ds.On("DeleteTenant",
+				mock.MatchedBy(func(ctx context.Context) bool {
+					ident := identity.FromContext(ctx)
+					return assert.NotNil(t, ident) &&
+						assert.Equal(t, tc.tenantId, ident.Tenant)
+				}),
+				tc.tenantId,
+			).Return(tc.dbErr)
+			app := New(ds, nil, Config{})
+			err := app.DeleteTenant(ctx, tc.tenantId)
+
+			if tc.dbErr != nil {
+				assert.EqualError(t, err, tc.dbErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestProvisionDevice(t *testing.T) {

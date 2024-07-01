@@ -42,6 +42,7 @@ type App interface {
 	HealthCheck(ctx context.Context) error
 
 	ProvisionTenant(ctx context.Context, tenant model.NewTenant) error
+	DeleteTenant(ctx context.Context, tenant_id string) error
 
 	ProvisionDevice(ctx context.Context, dev model.NewDevice) error
 	DecommissionDevice(ctx context.Context, devID string) error
@@ -89,6 +90,13 @@ func (a *app) ProvisionTenant(ctx context.Context, tenant model.NewTenant) error
 		Tenant: tenant.TenantID,
 	})
 	return a.store.MigrateLatest(ctx)
+}
+
+func (d *app) DeleteTenant(ctx context.Context, tenant_id string) error {
+	tenantCtx := identity.WithContext(ctx, &identity.Identity{
+		Tenant: tenant_id,
+	})
+	return d.store.DeleteTenant(tenantCtx, tenant_id)
 }
 
 func (a *app) ProvisionDevice(ctx context.Context, dev model.NewDevice) error {

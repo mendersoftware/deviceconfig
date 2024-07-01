@@ -58,6 +58,20 @@ func (_m *DataStore) DeleteDevice(ctx context.Context, devID string) error {
 	return r0
 }
 
+// DeleteTenant provides a mock function with given fields: ctx, tenant_id
+func (_m *DataStore) DeleteTenant(ctx context.Context, tenant_id string) error {
+	ret := _m.Called(ctx, tenant_id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, tenant_id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DropDatabase provides a mock function with given fields: ctx
 func (_m *DataStore) DropDatabase(ctx context.Context) error {
 	ret := _m.Called(ctx)

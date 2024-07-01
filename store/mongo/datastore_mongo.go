@@ -362,3 +362,18 @@ func (db *MongoStore) GetDevice(ctx context.Context, devID string) (model.Device
 
 	return device, nil
 }
+
+func (db *MongoStore) DeleteTenant(ctx context.Context, tenant_id string) error {
+	database := db.Database(ctx)
+	collections := []*mongo.Collection{
+		database.Collection(CollDevices),
+	}
+
+	for _, collection := range collections {
+		_, e := collection.DeleteMany(ctx, bson.M{KeyTenantID: tenant_id})
+		if e != nil {
+			return e
+		}
+	}
+	return nil
+}
