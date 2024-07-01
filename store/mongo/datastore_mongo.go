@@ -365,11 +365,12 @@ func (db *MongoStore) GetDevice(ctx context.Context, devID string) (model.Device
 
 func (db *MongoStore) DeleteTenant(ctx context.Context, tenant_id string) error {
 	database := db.Database(ctx)
-	collections := []*mongo.Collection{
-		database.Collection(CollDevices),
+	collectionNames, err := database.ListCollectionNames(ctx, mopts.ListCollectionsOptions{})
+	if err != nil {
+		return err
 	}
-
-	for _, collection := range collections {
+	for _, collName := range collectionNames {
+		collection := database.Collection(collName)
 		_, e := collection.DeleteMany(ctx, bson.M{KeyTenantID: tenant_id})
 		if e != nil {
 			return e
