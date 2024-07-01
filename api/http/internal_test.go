@@ -247,6 +247,85 @@ func TestProvisionTenant(t *testing.T) {
 	}
 }
 
+func TestDeleteDevice(t *testing.T) {
+	t.Parallel()
+	const tenantID = "123456789012345678901234"
+
+	testCases := []struct {
+		Name string
+
+		Request *http.Request
+
+		App    *mapp.App
+		Error  *rest.Error
+		Status int
+	}{{
+		Name: "ok",
+
+		Request: func() *http.Request {
+			repl := strings.NewReplacer(
+				":tenant_id", tenantID,
+			)
+			req, _ := http.NewRequest("DELETE",
+				"http://localhost"+URIInternal+repl.Replace(URITenant),
+				nil,
+			)
+			return req
+		}(),
+
+		App: func() *mapp.App {
+			app := new(mapp.App)
+			app.On("DeleteTenant",
+				contextMatcher,
+				tenantID,
+			).Return(nil)
+			return app
+		}(),
+		Status: http.StatusNoContent,
+	}, {
+		Name: "error, internal server error",
+
+		Request: func() *http.Request {
+			repl := strings.NewReplacer(
+				":tenant_id", "123456789012345678901234",
+			)
+			req, _ := http.NewRequest("DELETE",
+				"http://localhost"+URIInternal+repl.Replace(URITenant),
+				nil,
+			)
+			req.Header.Set("X-Men-Requestid", "test")
+			return req
+		}(),
+
+		App: func() *mapp.App {
+			app := new(mapp.App)
+			app.On("DeleteTenant",
+				contextMatcher,
+				tenantID,
+			).Return(errors.New("Oh noez!"))
+			return app
+		}(),
+		Error: &rest.Error{
+			Err:       http.StatusText(http.StatusInternalServerError),
+			RequestID: "test",
+		},
+		Status: http.StatusInternalServerError,
+	}}
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			defer tc.App.AssertExpectations(t)
+			router := NewRouter(tc.App)
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, tc.Request)
+			assert.Equal(t, tc.Status, w.Code)
+		})
+	}
+}
+
 func TestProvisionDevice(t *testing.T) {
 	t.Parallel()
 	newDeviceMatcher := func(expected string) interface{} {

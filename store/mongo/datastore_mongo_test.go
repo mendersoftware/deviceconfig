@@ -969,3 +969,31 @@ func TestDeleteDevice(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteTenant(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TestDeleteTenant in short mode.")
+	}
+
+	const tenant = "foo"
+	ctx := identity.WithContext(context.Background(),
+		&identity.Identity{
+			Tenant: tenant,
+		},
+	)
+
+	d := GetTestDataStore(t)
+
+	var testDevice = model.Device{
+		ID:        uuid.NewSHA1(uuid.NameSpaceDNS, []byte("mender.io")).String(),
+		UpdatedTS: ptrNow(),
+	}
+	err := d.InsertDevice(ctx, testDevice)
+	require.NoError(t, err)
+
+	err = d.DeleteTenant(ctx, tenant)
+	assert.NoError(t, err)
+
+	_, err = d.GetDevice(ctx, testDevice.ID)
+	assert.Error(t, err, store.ErrDeviceNoExist.Error())
+}
