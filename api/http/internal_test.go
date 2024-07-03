@@ -247,7 +247,7 @@ func TestProvisionTenant(t *testing.T) {
 	}
 }
 
-func TestDeleteDevice(t *testing.T) {
+func TestDeleteTenant(t *testing.T) {
 	t.Parallel()
 	const tenantID = "123456789012345678901234"
 
