@@ -71,7 +71,8 @@ func newClient(ctx context.Context, config MongoStoreConfig) (*mongo.Client, err
 	if config.MongoURL == nil {
 		return nil, errors.New("mongo: missing URL")
 	}
-	clientOptions.ApplyURI(config.MongoURL.String())
+	clientOptions.ApplyURI(config.MongoURL.String()).
+		SetRegistry(newRegistry())
 
 	if config.Username != "" {
 		credentials := mopts.Credential{

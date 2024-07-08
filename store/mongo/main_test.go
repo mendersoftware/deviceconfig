@@ -44,7 +44,11 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	status := func() int {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	if mongoURL, ok := os.LookupEnv("TEST_MONGO_URL"); ok {
+		db = DBFromEnv(mongoURL)
+		client = db.NewClient(ctx)
+	} else {
 		name, err := ioutil.TempDir("", "mongod-test")
 		if err != nil {
 			panic(err)
@@ -52,13 +56,10 @@ func TestMain(m *testing.M) {
 		instance := NewMongoTestInstance(name)
 		db = instance
 		defer instance.Stop()
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 		client = db.NewClient(ctx)
-		ret := m.Run()
-		return ret
-	}()
-	os.Exit(status)
+	}
+	os.Exit(m.Run())
 }
 
 var dbNameReplacer = strings.NewReplacer(
@@ -165,8 +166,31 @@ func (db *MongoTestInstance) Stop() {
 	db.Process.Process.Kill()
 }
 
+type DBFromEnv string
+
+func (db DBFromEnv) URL() string {
+	return string(db)
+}
+
+func (db DBFromEnv) NewClient(ctx context.Context) *mongo.Client {
+	client, err := mongo.Connect(
+		ctx,
+		mopts.Client().
+			ApplyURI(string(db)).
+			SetRegistry(newRegistry()),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return client
+}
 func (db *MongoTestInstance) NewClient(ctx context.Context) *mongo.Client {
-	client, err := mongo.Connect(ctx, mopts.Client().ApplyURI(db.URL()))
+	client, err := mongo.Connect(
+		ctx,
+		mopts.Client().
+			ApplyURI(db.URL()).
+			SetRegistry(newRegistry()),
+	)
 	if err != nil {
 		panic(err)
 	}
