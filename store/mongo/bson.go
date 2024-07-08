@@ -28,11 +28,12 @@ var (
 	tUUID = reflect.TypeOf(uuid.UUID{})
 )
 
-func init() {
+func newRegistry() *bsoncodec.Registry {
+	reg := bson.NewRegistry()
 	// Add UUID encoder/decoder for github.com/google/uuid.UUID
-	bson.DefaultRegistry = bson.NewRegistry()
-	bson.DefaultRegistry.RegisterTypeEncoder(tUUID, bsoncodec.ValueEncoderFunc(uuidEncodeValue))
-	bson.DefaultRegistry.RegisterTypeDecoder(tUUID, bsoncodec.ValueDecoderFunc(uuidDecodeValue))
+	reg.RegisterTypeEncoder(tUUID, bsoncodec.ValueEncoderFunc(uuidEncodeValue))
+	reg.RegisterTypeDecoder(tUUID, bsoncodec.ValueDecoderFunc(uuidDecodeValue))
+	return reg
 }
 
 func uuidEncodeValue(ec bsoncodec.EncodeContext, w bsonrw.ValueWriter, val reflect.Value) error {

@@ -71,7 +71,8 @@ func newClient(ctx context.Context, config MongoStoreConfig) (*mongo.Client, err
 	if config.MongoURL == nil {
 		return nil, errors.New("mongo: missing URL")
 	}
-	clientOptions.ApplyURI(config.MongoURL.String())
+	clientOptions.ApplyURI(config.MongoURL.String()).
+		SetRegistry(newRegistry())
 
 	if config.Username != "" {
 		credentials := mopts.Credential{
@@ -361,4 +362,20 @@ func (db *MongoStore) GetDevice(ctx context.Context, devID string) (model.Device
 	}
 
 	return device, nil
+}
+
+func (db *MongoStore) DeleteTenant(ctx context.Context, tenant_id string) error {
+	database := db.Database(ctx)
+	collectionNames, err := database.ListCollectionNames(ctx, mopts.ListCollectionsOptions{})
+	if err != nil {
+		return err
+	}
+	for _, collName := range collectionNames {
+		collection := database.Collection(collName)
+		_, e := collection.DeleteMany(ctx, bson.M{KeyTenantID: tenant_id})
+		if e != nil {
+			return e
+		}
+	}
+	return nil
 }
