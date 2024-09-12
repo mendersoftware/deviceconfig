@@ -1,3 +1,6 @@
+# MOVED
+
+This repository has been moved to the mender-server monorepo: https://github.com/mendersoftware/mender-server
 [![Build Status](https://gitlab.com/Northern.tech/Mender/deviceconfig/badges/master/pipeline.svg)](https://gitlab.com/Northern.tech/Mender/deviceconfig/pipelines)
 [![Coverage Status](https://coveralls.io/repos/github/mendersoftware/deviceconfig/badge.svg?branch=master)](https://coveralls.io/github/mendersoftware/deviceconfig?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mendersoftware/deviceconfig)](https://goreportcard.com/report/github.com/mendersoftware/deviceconfig)
